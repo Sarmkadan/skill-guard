@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/SkillGuard.Cli/SkillGuard.Cli.csproj" />
+    <Project Path="src/SkillGuard.Core/SkillGuard.Core.csproj" />
+    <Project Path="src/SkillGuard.Rules/SkillGuard.Rules.csproj" />
+  </Folder>
+</Solution>
