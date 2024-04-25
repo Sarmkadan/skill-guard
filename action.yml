@@ -13,12 +13,21 @@ inputs:
   sarif-file:
     description: Path for the SARIF report
     default: skill-guard.sarif
+  version:
+    description: Version of the skill-guard tool to install
+    default: 0.1.0
 runs:
   using: composite
   steps:
     - name: Install skill-guard
       shell: bash
-      run: dotnet tool install -g skill-guard
+      run: |
+        dotnet tool install -g skill-guard --version "${{ inputs.version }}"
+        echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
     - name: Scan
       shell: bash
-      run: skill-guard scan "${{ inputs.path }}" --fail-on "${{ inputs.fail-on }}" --format sarif --output "${{ inputs.sarif-file }}"
+      run: |
+        skill-guard scan "${{ inputs.path }}" \
+          --fail-on "${{ inputs.fail-on }}" \
+          --format sarif \
+          --output "${{ inputs.sarif-file }}"
