@@ -4,3 +4,6 @@ obj/
 .vs/
 .idea/
 *.sarif
+TestResults/
+BenchmarkDotNet.Artifacts/
+.aider*
