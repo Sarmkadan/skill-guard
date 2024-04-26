@@ -4,4 +4,7 @@
     <Project Path="src/SkillGuard.Core/SkillGuard.Core.csproj" />
     <Project Path="src/SkillGuard.Rules/SkillGuard.Rules.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/SkillGuard.Tests/SkillGuard.Tests.csproj" />
+  </Folder>
 </Solution>
