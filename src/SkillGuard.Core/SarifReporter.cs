@@ -8,6 +8,8 @@ public sealed class SarifReporter(string toolVersion = "0.1.0") : IReporter
 
     public void Write(ScanReport report, TextWriter output)
     {
+        ArgumentNullException.ThrowIfNull(report);
+        ArgumentNullException.ThrowIfNull(output);
         var rules = report.Findings
             .GroupBy(f => f.RuleId)
             .Select(g => new

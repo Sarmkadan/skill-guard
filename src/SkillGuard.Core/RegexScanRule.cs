@@ -17,6 +17,12 @@ public abstract class RegexScanRule : IScanRule
 
     public IEnumerable<Finding> Scan(ScanTarget target)
     {
+        ArgumentNullException.ThrowIfNull(target);
+        return ScanCore(target);
+    }
+
+    private IEnumerable<Finding> ScanCore(ScanTarget target)
+    {
         if (!AppliesTo(target)) yield break;
         for (var i = 0; i < target.Lines.Length; i++)
         {

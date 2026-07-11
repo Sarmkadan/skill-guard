@@ -34,6 +34,12 @@ public sealed class NetworkEgressRule : IScanRule
 
     public IEnumerable<Finding> Scan(ScanTarget target)
     {
+        ArgumentNullException.ThrowIfNull(target);
+        return ScanCore(target);
+    }
+
+    private IEnumerable<Finding> ScanCore(ScanTarget target)
+    {
         for (var i = 0; i < target.Lines.Length; i++)
         {
             var line = target.Lines[i];

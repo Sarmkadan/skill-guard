@@ -41,8 +41,11 @@ public sealed record Finding(
 public sealed record ScanTarget(string FilePath, string Content, SkillFileKind Kind)
 {
     public string[] Lines { get; } = Content.Split('\n');
-    public static ScanTarget FromFile(string filePath) =>
-        new(filePath, File.ReadAllText(filePath), SkillFileClassifier.Classify(filePath));
+    public static ScanTarget FromFile(string filePath)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
+        return new(filePath, File.ReadAllText(filePath), SkillFileClassifier.Classify(filePath));
+    }
 }
 
 public enum SkillFileKind

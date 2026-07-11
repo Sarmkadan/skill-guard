@@ -4,10 +4,11 @@ namespace SkillGuard.Core;
 
 public sealed class RuleEngine(IReadOnlyList<IScanRule> rules) : IScanner
 {
-    public IReadOnlyList<IScanRule> Rules { get; } = rules;
+    public IReadOnlyList<IScanRule> Rules { get; } = rules ?? throw new ArgumentNullException(nameof(rules));
 
     public ScanReport Scan(IEnumerable<ScanTarget> targets)
     {
+        ArgumentNullException.ThrowIfNull(targets);
         var stopwatch = Stopwatch.StartNew();
         var findings = new List<Finding>();
         var fileCount = 0;

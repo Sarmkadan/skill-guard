@@ -7,6 +7,9 @@ public static class ScanRunner
 {
     public static int Run(string path, string format, string? outputPath, string failOn, string[] disabledRules, string[] allowedHosts, bool noColor)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        ArgumentException.ThrowIfNullOrWhiteSpace(format);
+        ArgumentException.ThrowIfNullOrWhiteSpace(failOn);
         var rules = RuleCatalog.Filter(RuleCatalog.CreateDefaultRules(allowedHosts), disabledRules);
         var discovery = new DefaultFileDiscovery();
         var files = discovery.Discover(path).ToList();
@@ -45,6 +48,6 @@ public static class ScanRunner
         "medium" => Severity.Medium,
         "high" => Severity.High,
         "critical" => Severity.Critical,
-        _ => Severity.High
+        _ => throw new ArgumentException($"Unknown --fail-on value '{failOn}'. Supported: note, low, medium, high, critical, never")
     };
 }

@@ -4,6 +4,7 @@ public static class SkillFileClassifier
 {
     public static SkillFileKind Classify(string filePath)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
         var normalized = filePath.Replace('\\', '/');
         var fileName = Path.GetFileName(normalized);
         var ext = Path.GetExtension(fileName).ToLowerInvariant();

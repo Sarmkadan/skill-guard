@@ -1,9 +1,13 @@
+using System.Globalization;
+
 namespace SkillGuard.Core;
 
 public sealed class ConsoleReporter(bool useColor = true) : IReporter
 {
     public void Write(ScanReport report, TextWriter output)
     {
+        ArgumentNullException.ThrowIfNull(report);
+        ArgumentNullException.ThrowIfNull(output);
         foreach (var group in report.ByFile())
         {
             output.WriteLine(group.Key);
@@ -16,7 +20,8 @@ public sealed class ConsoleReporter(bool useColor = true) : IReporter
             }
             output.WriteLine();
         }
-        output.WriteLine($"{report.FilesScanned} file(s) scanned, {report.RulesExecuted} rule(s), {report.Findings.Count} finding(s) in {report.Elapsed.TotalMilliseconds:F0} ms");
+        output.WriteLine(string.Create(CultureInfo.InvariantCulture,
+            $"{report.FilesScanned} file(s) scanned, {report.RulesExecuted} rule(s), {report.Findings.Count} finding(s) in {report.Elapsed.TotalMilliseconds:F0} ms"));
     }
 
     public static string SeverityLabel(Severity severity) => severity switch

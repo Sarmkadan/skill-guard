@@ -6,6 +6,12 @@ public sealed class DefaultFileDiscovery : IFileDiscovery
 
     public IEnumerable<string> Discover(string rootPath)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
+        return DiscoverCore(rootPath);
+    }
+
+    private static IEnumerable<string> DiscoverCore(string rootPath)
+    {
         if (File.Exists(rootPath))
         {
             yield return rootPath;
