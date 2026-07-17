@@ -16,7 +16,7 @@ public class RuleEngineTests
             """);
         var report = engine.Scan([target]);
         Assert.Equal(1, report.FilesScanned);
-        Assert.Equal(6, report.RulesExecuted);
+        Assert.Equal(RuleCatalog.CreateDefaultRules().Count, report.RulesExecuted);
         Assert.True(report.HasFindings);
         Assert.Equal(Severity.Critical, report.MaxSeverity);
         Assert.Equal(Severity.Critical, report.Findings[0].Severity);
@@ -42,17 +42,27 @@ public class RuleEngineTests
     }
 
     [Fact]
-    public void RuleCatalog_ExposesRulesSg001ThroughSg006()
+    public void RuleCatalog_ExposesRulesSg001ThroughSg011()
     {
         var ids = RuleCatalog.CreateDefaultRules().Select(r => r.Id).Order().ToList();
-        Assert.Equal(["SG001", "SG002", "SG003", "SG004", "SG005", "SG006"], ids);
+        Assert.Equal(
+            ["SG001", "SG002", "SG003", "SG004", "SG005", "SG006", "SG007", "SG008", "SG009", "SG010", "SG011"],
+            ids);
+    }
+
+    [Fact]
+    public void RuleCatalog_HasUniqueRuleIds()
+    {
+        var ids = RuleCatalog.CreateDefaultRules().Select(r => r.Id).ToList();
+        Assert.Equal(ids.Count, ids.Distinct().Count());
     }
 
     [Fact]
     public void RuleCatalog_Filter_DisablesRulesCaseInsensitively()
     {
         var rules = RuleCatalog.Filter(RuleCatalog.CreateDefaultRules(), ["sg001", "SG005"]);
-        Assert.Equal(["SG002", "SG003", "SG004", "SG006"], rules.Select(r => r.Id).Order());
+        Assert.DoesNotContain(rules, r => r.Id is "SG001" or "SG005");
+        Assert.Contains(rules, r => r.Id == "SG002");
     }
 }
 
