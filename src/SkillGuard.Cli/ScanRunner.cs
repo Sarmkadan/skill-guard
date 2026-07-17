@@ -5,7 +5,7 @@ namespace SkillGuard.Cli;
 
 public static class ScanRunner
 {
-    public static int Run(string path, string format, string? outputPath, string failOn, string[] disabledRules, string[] allowedHosts, bool noColor)
+    public static int Run(string path, string format, string? outputPath, string failOn, string[] disabledRules, string[] allowedHosts, bool noColor, bool showFixes = false)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         ArgumentException.ThrowIfNullOrWhiteSpace(format);
@@ -36,8 +36,25 @@ public static class ScanRunner
             reporter.Write(report, writer);
             Console.WriteLine($"Report written to {outputPath}");
         }
+        if (showFixes && report.HasFindings) WriteFixes(report, Console.Out);
         var threshold = ParseThreshold(failOn);
         return threshold is { } value && report.CountAtOrAbove(value) > 0 ? 1 : 0;
+    }
+
+    private static void WriteFixes(ScanReport report, TextWriter output)
+    {
+        output.WriteLine();
+        output.WriteLine("Suggested fixes:");
+        foreach (var group in report.ByFile())
+        {
+            output.WriteLine(group.Key);
+            foreach (var finding in group)
+            {
+                output.WriteLine($"  {finding.Location.Line}:{finding.Location.Column}  {finding.RuleId}  {finding.Message}");
+                output.WriteLine($"      fix: {FixSuggester.Suggest(finding)}");
+            }
+            output.WriteLine();
+        }
     }
 
     public static Severity? ParseThreshold(string failOn) => failOn.ToLowerInvariant() switch

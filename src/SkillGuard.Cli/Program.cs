@@ -10,10 +10,11 @@ var failOnOption = new Option<string>("--fail-on", () => "high", "Minimum severi
 var disableOption = new Option<string[]>("--disable", "Rule ids to disable") { AllowMultipleArgumentsPerToken = true };
 var allowHostOption = new Option<string[]>("--allow-host", "Additional allowed egress hosts") { AllowMultipleArgumentsPerToken = true };
 var noColorOption = new Option<bool>("--no-color", "Disable ANSI colors in console output");
+var fixOption = new Option<bool>("--fix", "Print a suggested safe alternative for each finding (advisory; never edits files)");
 
 var scanCommand = new Command("scan", "Scan skill and instruction files for security issues")
 {
-    pathArgument, formatOption, outputOption, failOnOption, disableOption, allowHostOption, noColorOption
+    pathArgument, formatOption, outputOption, failOnOption, disableOption, allowHostOption, noColorOption, fixOption
 };
 scanCommand.SetHandler(context =>
 {
@@ -24,7 +25,8 @@ scanCommand.SetHandler(context =>
     var disabled = context.ParseResult.GetValueForOption(disableOption) ?? [];
     var allowHosts = context.ParseResult.GetValueForOption(allowHostOption) ?? [];
     var noColor = context.ParseResult.GetValueForOption(noColorOption);
-    context.ExitCode = ScanRunner.Run(path, format, output, failOn, disabled, allowHosts, noColor);
+    var showFixes = context.ParseResult.GetValueForOption(fixOption);
+    context.ExitCode = ScanRunner.Run(path, format, output, failOn, disabled, allowHosts, noColor, showFixes);
 });
 
 var rulesCommand = new Command("rules", "List available rules");
