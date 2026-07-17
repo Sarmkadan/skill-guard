@@ -43,6 +43,7 @@ public sealed class SarifReporter(string toolVersion = "0.1.0") : IReporter
                 }
             }
         }).ToArray();
+        var score = RiskScore.From(report);
         var document = new
         {
             version = "2.1.0",
@@ -61,7 +62,8 @@ public sealed class SarifReporter(string toolVersion = "0.1.0") : IReporter
                             rules
                         }
                     },
-                    results
+                    results,
+                    properties = new { riskScore = score.Points, riskGrade = score.Grade.ToString() }
                 }
             }
         };

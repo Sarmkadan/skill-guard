@@ -22,6 +22,7 @@ public sealed class ConsoleReporter(bool useColor = true) : IReporter
         }
         output.WriteLine(string.Create(CultureInfo.InvariantCulture,
             $"{report.FilesScanned} file(s) scanned, {report.RulesExecuted} rule(s), {report.Findings.Count} finding(s) in {report.Elapsed.TotalMilliseconds:F0} ms"));
+        output.WriteLine(RiskScore.From(report).Summary());
     }
 
     public static string SeverityLabel(Severity severity) => severity switch
