@@ -16,7 +16,12 @@ public enum FindingCategory
     DangerousShell,
     NetworkEgress,
     UnreviewedPayload,
-    Obfuscation
+    Obfuscation,
+    DnsExfiltration,
+    IndirectInjection,
+    PrivilegeEscalation,
+    SandboxEscape,
+    McpMisconfiguration
 }
 
 public sealed record SourceLocation(string FilePath, int Line, int Column, int EndColumn)

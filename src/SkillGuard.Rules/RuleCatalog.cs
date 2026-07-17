@@ -11,7 +11,12 @@ public static class RuleCatalog
         new DangerousShellRule(),
         new ObfuscatedPayloadRule(),
         new NetworkEgressRule(allowedHosts),
-        new UnreviewedPayloadRule()
+        new UnreviewedPayloadRule(),
+        new DnsExfiltrationRule(),
+        new IndirectInjectionRule(),
+        new PrivilegeEscalationRule(),
+        new SandboxEscapeRule(),
+        new McpConfigRule()
     ];
 
     public static IReadOnlyList<IScanRule> Filter(IReadOnlyList<IScanRule> rules, IReadOnlyCollection<string> disabledRuleIds) =>
