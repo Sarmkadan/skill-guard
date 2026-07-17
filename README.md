@@ -41,8 +41,38 @@ $ skill-guard scan .
 | SG004 | Obfuscated payloads: base64/hex decode-and-execute, encoded PowerShell | HIGH |
 | SG005 | Network egress to hosts outside the allowlist, and raw IP addresses | MEDIUM |
 | SG006 | Opaque binary artifacts downloaded, extracted or invoked by a skill bundle | MEDIUM |
+| SG007 | Data exfiltration through DNS lookups or DNS-over-HTTPS (payload encoded into hostnames) | HIGH |
+| SG008 | Indirect prompt injection - directives addressed to a downstream agent reading tool/web results, forged chat-role delimiters, fake context boundaries | HIGH |
+| SG009 | Privilege escalation and persistence: sudoers/SUID edits, `authorized_keys` and cron implants, capability grants | HIGH |
+| SG010 | Container/sandbox escape: Docker-socket access, `--privileged`/host-namespace runs, `nsenter`, host-filesystem binds, `core_pattern` abuse | HIGH |
+| SG011 | MCP manifest misconfiguration: SSRF to cloud-metadata/loopback/private-range endpoints, blanket `alwaysAllow`/`autoApprove`, arbitrary-shell servers | MEDIUM |
 
 That output is a real scan of `samples/` in this repo. The exit code is non-zero once a finding reaches `--fail-on` (default `high`); `skill-guard rules` prints the catalog. Tune with `--disable SG005`, `--allow-host registry.npmjs.org`, `--fail-on critical`.
+
+## Risk score
+
+Every run ends with a single weighted score and an A-F grade, so you can compare files and track drift over time instead of counting findings by hand:
+
+```
+1 file(s) scanned, 11 rule(s), 7 finding(s) in 148 ms
+risk 135 (grade F) - 2 critical, 3 high, 2 medium
+```
+
+Findings are weighted CRITICAL 40 / HIGH 15 / MEDIUM 5 / LOW 1. A clean file is grade A; a single CRITICAL is enough to reach grade F. The score is also emitted in SARIF under `runs[].properties.riskScore` / `riskGrade`.
+
+## Suggested fixes
+
+`--fix` appends a concrete, safer alternative for each finding. It is advisory and never edits files - the right fix for a flagged instruction is usually to remove or rethink it, which a scanner should not do silently:
+
+```
+$ skill-guard scan . --fix
+...
+Suggested fixes:
+./.claude/skills/release-notes/SKILL.md
+  13:1  SG003  Pipes a remote download directly into a shell
+      fix: Replace pipe-to-shell with a pinned, checksummed download:
+           curl -fsSLO <url> && echo '<sha256>  file' | sha256sum -c && ./file
+```
 
 ## GitHub Action
 
