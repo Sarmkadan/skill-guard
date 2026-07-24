@@ -1,0 +1,1 @@
+This is a known-bad example of a PromptInjection finding.
