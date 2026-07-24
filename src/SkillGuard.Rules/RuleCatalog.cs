@@ -17,6 +17,7 @@ public static class RuleCatalog
         new PrivilegeEscalationRule(),
         new SandboxEscapeRule(),
         new McpConfigRule(),
+    new McpManifestRule(),
         new DecodedPayloadRule()
     ];
 
