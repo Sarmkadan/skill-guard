@@ -41,6 +41,18 @@ public sealed record Finding(
     string Snippet)
 {
     public string? Remediation { get; init; }
+
+    public Fix? Fix { get; init; }
+}
+
+/// <summary>
+/// Represents a suggested fix for a finding, including replacement text and location information.
+/// </summary>
+public sealed record Fix(
+    string ReplacementText,
+    SourceLocation Region)
+{
+    public string Description { get; init; } = string.Empty;
 }
 
 public sealed record ScanTarget(string FilePath, string Content, SkillFileKind Kind)

