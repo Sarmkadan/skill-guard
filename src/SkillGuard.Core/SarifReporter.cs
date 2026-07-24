@@ -20,6 +20,7 @@ public sealed class SarifReporter(string toolVersion = "0.1.0") : IReporter
                 defaultConfiguration = new { level = ToSarifLevel(g.Max(f => f.Severity)) }
             })
             .ToArray();
+
         var results = report.Findings.Select(f => new
         {
             ruleId = f.RuleId,
@@ -41,8 +42,10 @@ public sealed class SarifReporter(string toolVersion = "0.1.0") : IReporter
                         }
                     }
                 }
-            }
+            },
+            fixes = GetFixes(f)
         }).ToArray();
+
         var score = RiskScore.From(report);
         var document = new
         {
@@ -69,6 +72,48 @@ public sealed class SarifReporter(string toolVersion = "0.1.0") : IReporter
         };
         var json = JsonSerializer.Serialize(document, Options).Replace("\"schema\":", "\"$schema\":");
         output.WriteLine(json);
+    }
+
+    private static object? GetFixes(Finding finding)
+    {
+        if (finding.Fix == null)
+        {
+            return null;
+        }
+
+        return new[]
+        {
+            new
+            {
+                description = new
+                {
+                    text = string.IsNullOrEmpty(finding.Fix.Description)
+                        ? "Suggested fix for this finding"
+                        : finding.Fix.Description
+                },
+                artifactChanges = new[]
+                {
+                    new
+                    {
+                        artifactLocation = new { uri = finding.Fix.Region.FilePath.Replace('\\', '/') },
+                        replacements = new[]
+                        {
+                            new
+                            {
+                                deletedRegion = new
+                                {
+                                    startLine = finding.Fix.Region.Line,
+                                    startColumn = finding.Fix.Region.Column,
+                                    endLine = finding.Fix.Region.Line,
+                                    endColumn = finding.Fix.Region.EndColumn
+                                },
+                                insertedContent = new { text = finding.Fix.ReplacementText }
+                            }
+                        }
+                    }
+                }
+            }
+        };
     }
 
     public static string ToSarifLevel(Severity severity) => severity switch

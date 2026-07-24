@@ -15,13 +15,13 @@ public abstract class RegexScanRule : IScanRule
     protected abstract IReadOnlyList<PatternDefinition> Patterns { get; }
     protected virtual bool AppliesTo(ScanTarget target) => true;
 
-    public IEnumerable<Finding> Scan(ScanTarget target)
+    public virtual IEnumerable<Finding> Scan(ScanTarget target)
     {
         ArgumentNullException.ThrowIfNull(target);
         return ScanCore(target);
     }
 
-    private IEnumerable<Finding> ScanCore(ScanTarget target)
+    protected virtual IEnumerable<Finding> ScanCore(ScanTarget target)
     {
         if (!AppliesTo(target)) yield break;
         for (var i = 0; i < target.Lines.Length; i++)
@@ -38,8 +38,11 @@ public abstract class RegexScanRule : IScanRule
                         Category,
                         definition.Message,
                         SourceLocation.At(target.FilePath, i + 1, match.Index + 1, match.Length),
-                        line.Trim().Length > 200 ? line.Trim()[..200] : line.Trim())
-                    { Remediation = Remediation };
+                        line.Trim().Length > 200 ? line.Trim()[..200] : line.Trim()
+                    )
+                    {
+                        Remediation = Remediation
+                    };
                 }
             }
         }

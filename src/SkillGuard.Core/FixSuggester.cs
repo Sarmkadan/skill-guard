@@ -10,6 +10,25 @@ public static class FixSuggester
     public static string Suggest(Finding finding)
     {
         ArgumentNullException.ThrowIfNull(finding);
+
+        // If the finding has a rule-specific fix already attached, use it
+        if (finding.Fix != null)
+        {
+            return string.IsNullOrEmpty(finding.Fix.Description)
+                ? "Apply the suggested fix to resolve this issue."
+                : finding.Fix.Description;
+        }
+
+        // Try to get a fix from the rule that produced this finding
+        var ruleFix = TryGetRuleFix(finding);
+        if (ruleFix != null)
+        {
+            return string.IsNullOrEmpty(ruleFix.Description)
+                ? "Apply the suggested fix to resolve this issue."
+                : ruleFix.Description;
+        }
+
+        // Fall back to category-based suggestions
         return finding.Category switch
         {
             FindingCategory.PromptInjection =>
@@ -19,7 +38,7 @@ public static class FixSuggester
             FindingCategory.CredentialExfiltration =>
                 "Drop the secret read/transmit. Reference credentials by env-var name at the point of use and let the runtime inject them; never cat a credential file or POST a token to an external host.",
             FindingCategory.DangerousShell =>
-                "Replace pipe-to-shell with a pinned, checksummed download: `curl -fsSLO <url> && echo '<sha256>  file' | sha256sum -c && ./file`. Scope destructive commands to an explicit project subdirectory.",
+                "Replace pipe-to-shell with a pinned, checksummed download: `curl -fsSLO <url> && echo '<sha256> file' | sha256sum -c && ./file`. Scope destructive commands to an explicit project subdirectory.",
             FindingCategory.Obfuscation =>
                 "Inline the plain command. If a step needs base64/hex/-EncodedCommand to run, it cannot be reviewed and does not belong in a shared skill.",
             FindingCategory.DnsExfiltration =>
@@ -36,5 +55,113 @@ public static class FixSuggester
                 "Point MCP servers at reviewed public hosts only - never metadata, loopback or private-range addresses - and require per-tool confirmation instead of alwaysAllow/autoApprove.",
             _ => finding.Remediation ?? "Review this instruction manually and remove it if it cannot be justified."
         };
+    }
+
+    /// <summary>
+    /// Creates a rule-specific fix for a finding.
+    /// </summary>
+    /// <param name="finding">The finding to create a fix for</param>
+    /// <param name="replacementText">The replacement text for the fix</param>
+    /// <param name="description">Optional description of the fix</param>
+    /// <returns>A Finding with an attached Fix</returns>
+    public static Finding WithFix(this Finding finding, string replacementText, SourceLocation region, string? description = null)
+    {
+        ArgumentNullException.ThrowIfNull(finding);
+        ArgumentException.ThrowIfNullOrWhiteSpace(replacementText);
+        ArgumentNullException.ThrowIfNull(region);
+
+        return finding with
+        {
+            Fix = new Fix(replacementText, region)
+            {
+                Description = description ?? string.Empty
+            }
+        };
+    }
+
+    /// <summary>
+    /// Creates a rule-specific fix for a finding with a simple replacement.
+    /// </summary>
+    /// <param name="finding">The finding to create a fix for</param>
+    /// <param name="replacementText">The replacement text for the fix</param>
+    /// <param name="description">Optional description of the fix</param>
+    /// <returns>A Finding with an attached Fix</returns>
+    public static Finding WithSimpleReplacement(this Finding finding, string replacementText, string? description = null)
+    {
+        ArgumentNullException.ThrowIfNull(finding);
+        ArgumentException.ThrowIfNullOrWhiteSpace(replacementText);
+
+        var replacementRegion = new SourceLocation(
+            finding.Location.FilePath,
+            finding.Location.Line,
+            finding.Location.Column,
+            finding.Location.EndColumn
+        );
+
+        return finding.WithFix(replacementText, replacementRegion, description);
+    }
+
+    /// <summary>
+    /// Attempts to get a fix from the rule that produced the finding.
+    /// Rules implementing <see cref="ISuggestsFix"/> can provide dynamic fix suggestions.
+    /// </summary>
+    /// <param name="finding">The finding to get a fix for</param>
+    /// <returns>A Fix object if available, null otherwise</returns>
+    private static Fix? TryGetRuleFix(Finding finding)
+    {
+        // Try to resolve the rule type from the RuleId
+        // Rule IDs are typically in format "SGXXX" where XXX is a number
+        if (string.IsNullOrEmpty(finding.RuleId) || !finding.RuleId.StartsWith("SG"))
+        {
+            return null;
+        }
+
+        // Map RuleId to the actual type name
+        // SG001 -> PromptInjectionRule, SG002 -> CredentialExfiltrationRule, etc.
+        var ruleTypeName = finding.RuleId switch
+        {
+            "SG001" => "SkillGuard.Rules.PromptInjectionRule",
+            "SG002" => "SkillGuard.Rules.CredentialExfiltrationRule",
+            "SG003" => "SkillGuard.Rules.DangerousShellRule",
+            "SG004" => "SkillGuard.Rules.NetworkEgressRule",
+            "SG005" => "SkillGuard.Rules.UnreviewedPayloadRule",
+            "SG006" => "SkillGuard.Rules.ObfuscatedPayloadRule",
+            "SG007" => "SkillGuard.Rules.DnsExfiltrationRule",
+            "SG008" => "SkillGuard.Rules.IndirectInjectionRule",
+            "SG009" => "SkillGuard.Rules.PrivilegeEscalationRule",
+            "SG010" => "SkillGuard.Rules.SandboxEscapeRule",
+            "SG011" => "SkillGuard.Rules.McpConfigRule",
+            "SG012" => "SkillGuard.Rules.McpManifestRule",
+            "SG013" => "SkillGuard.Rules.DecodedPayloadRule",
+            _ => $"SkillGuard.Rules.{finding.RuleId}Rule"
+        };
+
+        var ruleType = Type.GetType(ruleTypeName);
+
+        if (ruleType == null)
+        {
+            return null;
+        }
+
+        // Check if the rule implements ISuggestsFix
+        if (ruleType.GetInterface(typeof(ISuggestsFix).Name) != null)
+        {
+            try
+            {
+                // Create an instance and call SuggestFix
+                var ruleInstance = Activator.CreateInstance(ruleType);
+                if (ruleInstance is ISuggestsFix suggestsFix)
+                {
+                    return suggestsFix.SuggestFix(finding);
+                }
+            }
+            catch
+            {
+                // If we can't instantiate or call the method, just return null
+                return null;
+            }
+        }
+
+        return null;
     }
 }
