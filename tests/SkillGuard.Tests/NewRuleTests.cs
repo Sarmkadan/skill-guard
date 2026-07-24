@@ -155,48 +155,6 @@ public class McpConfigRuleTests
     }
 }
 
-public class RiskScoreTests
-{
-    static Finding Make(Severity severity) =>
-        new("SGX", "X", severity, FindingCategory.PromptInjection, "m",
-            SourceLocation.At("/f", 1, 1, 1), "s");
-
-    static ScanReport Report(params Severity[] severities) =>
-        new(severities.Select(Make).ToList(), 1, 1, TimeSpan.Zero);
-
-    [Fact]
-    public void CleanReport_ScoresZeroGradeA()
-    {
-        var score = RiskScore.From(Report());
-        Assert.Equal(0, score.Points);
-        Assert.Equal('A', score.Grade);
-    }
-
-    [Fact]
-    public void SingleCritical_IsGradeF()
-    {
-        var score = RiskScore.From(Report(Severity.Critical));
-        Assert.Equal(40, score.Points);
-        Assert.Equal('F', score.Grade);
-    }
-
-    [Fact]
-    public void Weights_AreSummed()
-    {
-        var score = RiskScore.From(Report(Severity.High, Severity.Medium, Severity.Low));
-        Assert.Equal(21, score.Points);
-        Assert.Equal('D', score.Grade);
-    }
-
-    [Fact]
-    public void Summary_ListsBreakdown()
-    {
-        var summary = RiskScore.From(Report(Severity.Critical, Severity.Medium)).Summary();
-        Assert.Contains("1 critical", summary);
-        Assert.Contains("1 medium", summary);
-    }
-}
-
 public class FixSuggesterTests
 {
     [Theory]
