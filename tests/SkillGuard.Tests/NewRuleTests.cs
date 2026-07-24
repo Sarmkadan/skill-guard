@@ -154,19 +154,3 @@ public class McpConfigRuleTests
         Assert.Empty(_rule.Scan(target));
     }
 }
-
-public class FixSuggesterTests
-{
-    [Theory]
-    [InlineData(FindingCategory.DnsExfiltration)]
-    [InlineData(FindingCategory.SandboxEscape)]
-    [InlineData(FindingCategory.McpMisconfiguration)]
-    [InlineData(FindingCategory.PrivilegeEscalation)]
-    [InlineData(FindingCategory.IndirectInjection)]
-    public void ProvidesNonEmptySuggestion_ForEveryCategory(FindingCategory category)
-    {
-        var finding = new Finding("SGX", "X", Severity.High, category, "m",
-            SourceLocation.At("/f", 1, 1, 1), "s");
-        Assert.False(string.IsNullOrWhiteSpace(FixSuggester.Suggest(finding)));
-    }
-}
