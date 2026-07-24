@@ -1,28 +1,63 @@
 using System.Globalization;
+using System.Text;
 
 namespace SkillGuard.Core;
 
 public sealed class ConsoleReporter(bool useColor = true) : IReporter
 {
+    private const string ControlCharsToRemove = "\x00\x01\x02\x03\x04\x05\x06\x07\x08\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a";
+
     public void Write(ScanReport report, TextWriter output)
     {
         ArgumentNullException.ThrowIfNull(report);
         ArgumentNullException.ThrowIfNull(output);
         foreach (var group in report.ByFile())
         {
-            output.WriteLine(group.Key);
+            output.WriteLine(SanitizeForTerminal(group.Key));
             foreach (var finding in group)
             {
                 var marker = SeverityLabel(finding.Severity);
                 if (useColor) marker = Colorize(finding.Severity, marker);
-                output.WriteLine($"  {finding.Location.Line}:{finding.Location.Column}  {marker}  {finding.RuleId}  {finding.Message}");
-                if (finding.Snippet.Length > 0) output.WriteLine($"      > {finding.Snippet}");
+                output.WriteLine(SanitizeForTerminal($" {finding.Location.Line}:{finding.Location.Column} {marker} {finding.RuleId} {finding.Message}"));
+                if (finding.Snippet.Length > 0)
+                {
+                    output.WriteLine(SanitizeForTerminal($" > {finding.Snippet}"));
+                }
             }
             output.WriteLine();
         }
-        output.WriteLine(string.Create(CultureInfo.InvariantCulture,
-            $"{report.FilesScanned} file(s) scanned, {report.RulesExecuted} rule(s), {report.Findings.Count} finding(s) in {report.Elapsed.TotalMilliseconds:F0} ms"));
-        output.WriteLine(RiskScore.From(report).Summary());
+        output.WriteLine(string.Create(CultureInfo.InvariantCulture, $"{report.FilesScanned} file(s) scanned, {report.RulesExecuted} rule(s), {report.Findings.Count} finding(s) in {report.Elapsed.TotalMilliseconds:F0} ms"));
+        output.WriteLine(SanitizeForTerminal(RiskScore.From(report).Summary()));
+    }
+
+    /// <summary>
+    /// Sanitizes a string for safe terminal output by removing control characters that could be used for
+    /// terminal escape injection attacks (ANSI escape sequences, C0 control codes, OSC sequences, etc.).
+    /// </summary>
+    /// <param name="input">The input string to sanitize.</param>
+    /// <returns>The sanitized string with control characters removed.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="input"/> is null.</exception>
+    public static string SanitizeForTerminal(string input)
+    {
+        ArgumentNullException.ThrowIfNull(input);
+
+        // Use StringBuilder for better performance with potentially large strings
+        var sanitized = new StringBuilder(input.Length);
+
+        foreach (char c in input)
+        {
+            // Keep safe whitespace characters and printable ASCII (32-126)
+            // Exclude: C0 control codes (0x00-0x1F) except \t (0x09), \n (0x0A), \r (0x0D)
+            // This preserves normal text while removing control characters that could be used for injection
+            if (c >= ' ' || c == '\t' || c == '\n' || c == '\r')
+            {
+                sanitized.Append(c);
+            }
+            // Note: \x1b (ESC) is excluded here, which prevents ANSI escape sequences like \x1b[31m
+            // The Colorize() method generates its own ANSI codes after sanitization, so we don't need to preserve ESC
+        }
+
+        return sanitized.ToString();
     }
 
     public static string SeverityLabel(Severity severity) => severity switch
