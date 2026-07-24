@@ -46,10 +46,11 @@ public sealed class PromptInjectionRule : RegexScanRule
 
         foreach (var finding in base.ScanCore(target))
         {
-            // Downgrade severity if the match appears in a quoted/example context
+            // Adjust severity based on context (e.g., quoted/example contexts should be downgraded)
             var contextAdjustedSeverity = AdjustSeverityForContext(target, finding, finding.Severity);
 
-            // Create a new finding with the adjusted severity
+            // Create a new finding with the context-adjusted severity
+            // Note: The base finding's Severity was already resolved via SeverityResolution.Resolve()
             var adjustedFinding = new Finding(
                 finding.RuleId,
                 finding.RuleName,
@@ -64,6 +65,7 @@ public sealed class PromptInjectionRule : RegexScanRule
                 Fix = finding.Fix
             };
 
+            SeverityResolution.Validate(adjustedFinding);
             yield return adjustedFinding;
         }
     }
