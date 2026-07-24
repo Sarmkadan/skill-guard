@@ -1,15 +1,56 @@
+using System.Reflection;
 using System.Text.Json;
 
 namespace SkillGuard.Core;
 
-public sealed class SarifReporter(string toolVersion = "0.1.0") : IReporter
+/// <summary>
+/// Generates SARIF (Static Analysis Results Interchange Format) output from scan reports.
+/// SARIF is a JSON-based format for the output of static analysis tools.
+/// </summary>
+/// <remarks>
+/// This reporter validates all inputs and produces schema-conformant SARIF output.
+/// For empty reports (zero findings), it emits a valid SARIF document with an empty results array.
+/// </remarks>
+public sealed class SarifReporter : IReporter
 {
     private static readonly JsonSerializerOptions Options = new() { WriteIndented = true };
+    private readonly string _toolVersion;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SarifReporter"/> class with a default tool version.
+    /// </summary>
+    public SarifReporter()
+        : this(Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "0.1.0")
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SarifReporter"/> class with a custom tool version.
+    /// </summary>
+    /// <param name="toolVersion">The tool version to include in the SARIF output. Must not be null or whitespace.</param>
+    /// <exception cref="ArgumentException">Thrown if <paramref name="toolVersion"/> is null or whitespace.</exception>
+    public SarifReporter(string toolVersion)
+    {
+        _toolVersion = toolVersion;
+        ArgumentException.ThrowIfNullOrWhiteSpace(_toolVersion);
+    }
+
+    /// <summary>
+    /// Writes the scan report in SARIF format to the specified output.
+    /// </summary>
+    /// <param name="report">The scan report containing findings to report. Must not be null.</param>
+    /// <param name="output">The text writer to write the SARIF output to. Must not be null.</param>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="report"/>, <paramref name="output"/>, or <paramref name="report.Findings"/> is null.</exception>
+    /// <remarks>
+    /// For empty reports (zero findings), this method emits a valid SARIF document with an empty results array.
+    /// This ensures the output is always schema-conformant, even when no issues are found.
+    /// </remarks>
     public void Write(ScanReport report, TextWriter output)
     {
         ArgumentNullException.ThrowIfNull(report);
         ArgumentNullException.ThrowIfNull(output);
+        ArgumentNullException.ThrowIfNull(report.Findings);
+
         var rules = report.Findings
             .GroupBy(f => f.RuleId)
             .Select(g => new
@@ -60,7 +101,7 @@ public sealed class SarifReporter(string toolVersion = "0.1.0") : IReporter
                         driver = new
                         {
                             name = "skill-guard",
-                            version = toolVersion,
+                            version = _toolVersion,
                             informationUri = "https://github.com/Sarmkadan/skill-guard",
                             rules
                         }
@@ -74,9 +115,14 @@ public sealed class SarifReporter(string toolVersion = "0.1.0") : IReporter
         output.WriteLine(json);
     }
 
+    /// <summary>
+    /// Extracts fix information for a finding if available.
+    /// </summary>
+    /// <param name="finding">The finding to extract fixes for.</param>
+    /// <returns>A fixes array if the finding has a fix, otherwise null.</returns>
     private static object? GetFixes(Finding finding)
     {
-        if (finding.Fix == null)
+        if (finding.Fix is null)
         {
             return null;
         }
@@ -116,6 +162,11 @@ public sealed class SarifReporter(string toolVersion = "0.1.0") : IReporter
         };
     }
 
+    /// <summary>
+    /// Converts a SkillGuard severity level to a SARIF level.
+    /// </summary>
+    /// <param name="severity">The severity level to convert.</param>
+    /// <returns>The corresponding SARIF level string.</returns>
     public static string ToSarifLevel(Severity severity) => severity switch
     {
         Severity.Critical or Severity.High => "error",
