@@ -31,6 +31,24 @@ public sealed record SourceLocation(string FilePath, int Line, int Column, int E
     public override string ToString() => $"{FilePath}:{Line}:{Column}";
 }
 
+/// <summary>
+/// Represents a security finding discovered during a scan.
+/// </summary>
+/// <param name="RuleId">The unique identifier of the rule that generated this finding</param>
+/// <param name="RuleName">The human-readable name of the rule that generated this finding</param>
+/// <param name="Severity">The severity level of this finding (Note, Low, Medium, High, or Critical)</param>
+/// <param name="Category">The category of security issue this finding represents</param>
+/// <param name="Message">The human-readable message describing the finding</param>
+/// <param name="Location">The source location where the finding was detected</param>
+/// <param name="Snippet">A snippet of the relevant code or content</param>
+/// <remarks>
+/// Severity Contract:
+/// - Severity is resolved exactly once at Finding construction time
+/// - For PatternDefinition-based rules: PatternDefinition.SeverityOverride ?? Rule.DefaultSeverity
+/// - For direct rule implementations: The rule must provide the appropriate severity directly
+/// - This resolved severity is what gets aggregated into RiskScore.Counts
+/// - There is no divergence between the severity shown to users and the severity counted in RiskScore
+/// </remarks>
 public sealed record Finding(
     string RuleId,
     string RuleName,
@@ -40,8 +58,14 @@ public sealed record Finding(
     SourceLocation Location,
     string Snippet)
 {
+    /// <summary>
+    /// Gets the optional remediation advice for this finding.
+    /// </summary>
     public string? Remediation { get; init; }
 
+    /// <summary>
+    /// Gets the optional fix that can automatically resolve this finding.
+    /// </summary>
     public Fix? Fix { get; init; }
 }
 
