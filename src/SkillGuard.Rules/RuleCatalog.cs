@@ -16,7 +16,8 @@ public static class RuleCatalog
         new IndirectInjectionRule(),
         new PrivilegeEscalationRule(),
         new SandboxEscapeRule(),
-        new McpConfigRule()
+        new McpConfigRule(),
+        new DecodedPayloadRule()
     ];
 
     public static IReadOnlyList<IScanRule> Filter(IReadOnlyList<IScanRule> rules, IReadOnlyCollection<string> disabledRuleIds) =>
