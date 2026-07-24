@@ -6,16 +6,18 @@ using SkillGuard.Rules;
 var pathArgument = new Argument<string>("path", () => ".", "File or directory to scan");
 var formatOption = new Option<string>(["--format", "-f"], () => "console", "Output format: console or sarif");
 var outputOption = new Option<string?>(["--output", "-o"], "Write report to file instead of stdout");
-var failOnOption = new Option<string>("--fail-on", () => "high", "Minimum severity that causes a non-zero exit: note, low, medium, high, critical, never");
-var disableOption = new Option<string[]>("--disable", "Rule ids to disable") { AllowMultipleArgumentsPerToken = true };
-var allowHostOption = new Option<string[]>("--allow-host", "Additional allowed egress hosts") { AllowMultipleArgumentsPerToken = true };
-var noColorOption = new Option<bool>("--no-color", "Disable ANSI colors in console output");
-var fixOption = new Option<bool>("--fix", "Print a suggested safe alternative for each finding (advisory; never edits files)");
+var failOnOption = new Option<string>(["--fail-on"], () => "high", "Minimum severity that causes a non-zero exit: note, low, medium, high, critical, never");
+var disableOption = new Option<string[]>(["--disable"], "Rule ids to disable") { AllowMultipleArgumentsPerToken = true };
+var allowHostOption = new Option<string[]>(["--allow-host"], "Additional allowed egress hosts") { AllowMultipleArgumentsPerToken = true };
+var noColorOption = new Option<bool>(["--no-color"], "Disable ANSI colors in console output");
+var fixOption = new Option<bool>(["--fix"], "Print a suggested safe alternative for each finding (advisory; never edits files)");
+var diffOption = new Option<string?>("--diff", "Scan only files changed in the specified git diff range (e.g., origin/main...HEAD)");
 
 var scanCommand = new Command("scan", "Scan skill and instruction files for security issues")
 {
-    pathArgument, formatOption, outputOption, failOnOption, disableOption, allowHostOption, noColorOption, fixOption
+    pathArgument, formatOption, outputOption, failOnOption, disableOption, allowHostOption, noColorOption, fixOption, diffOption
 };
+
 scanCommand.SetHandler(context =>
 {
     var path = context.ParseResult.GetValueForArgument(pathArgument);
@@ -26,14 +28,15 @@ scanCommand.SetHandler(context =>
     var allowHosts = context.ParseResult.GetValueForOption(allowHostOption) ?? [];
     var noColor = context.ParseResult.GetValueForOption(noColorOption);
     var showFixes = context.ParseResult.GetValueForOption(fixOption);
-    context.ExitCode = ScanRunner.Run(path, format, output, failOn, disabled, allowHosts, noColor, showFixes);
+    var diffRange = context.ParseResult.GetValueForOption(diffOption);
+    context.ExitCode = ScanRunner.Run(path, format, output, failOn, disabled, allowHosts, noColor, showFixes, diffRange);
 });
 
 var rulesCommand = new Command("rules", "List available rules");
 rulesCommand.SetHandler(() =>
 {
     foreach (var rule in RuleCatalog.CreateDefaultRules())
-        Console.WriteLine($"{rule.Id}  {ConsoleReporter.SeverityLabel(rule.DefaultSeverity),-8}  {rule.Name}: {rule.Description}");
+        Console.WriteLine($"{rule.Id} {ConsoleReporter.SeverityLabel(rule.DefaultSeverity),-8} {rule.Name}: {rule.Description}");
 });
 
 var root = new RootCommand("skill-guard: static security scanner for agent skill and instruction files");
