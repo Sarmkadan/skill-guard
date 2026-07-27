@@ -11,7 +11,7 @@ namespace SkillGuard.Core;
 /// This reporter validates all inputs and produces schema-conformant SARIF output.
 /// For empty reports (zero findings), it emits a valid SARIF document with an empty results array.
 /// </remarks>
-public sealed class SarifReporter : IReporter
+public sealed class SarifReporter : IReporter, ISarifReporter
 {
     private static readonly JsonSerializerOptions Options = new() { WriteIndented = true };
     private readonly string _toolVersion;
