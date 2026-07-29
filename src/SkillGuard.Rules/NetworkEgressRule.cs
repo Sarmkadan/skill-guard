@@ -3,7 +3,7 @@ using SkillGuard.Core;
 
 namespace SkillGuard.Rules;
 
-public sealed class NetworkEgressRule : IScanRule
+public sealed class NetworkEgressRule : IScanRule, INetworkEgressRule
 {
     public string Id => "SG005";
     public string Name => "NetworkEgress";
