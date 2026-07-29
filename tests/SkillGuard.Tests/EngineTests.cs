@@ -4,7 +4,7 @@ using Xunit;
 
 namespace SkillGuard.Tests;
 
-public class RuleEngineTests
+public class RuleEngineTests : IRuleEngineTests
 {
     [Fact]
     public void Scan_OrdersFindingsBySeverityThenLocation()
@@ -65,4 +65,3 @@ public class RuleEngineTests
         Assert.Contains(rules, r => r.Id == "SG002");
     }
 }
-
