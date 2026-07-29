@@ -11,10 +11,10 @@ namespace SkillGuard.Core;
 /// For empty reports (zero findings), this reporter outputs a summary line indicating no findings were found.
 /// This ensures users always see confirmation that the scan completed successfully, even when no issues are detected.
 /// </remarks>
-public sealed class ConsoleReporter(bool useColor = true) : IReporter
-{    private readonly bool _useColor = useColor;
+public sealed class ConsoleReporter(bool useColor = true) : IReporter, IConsoleReporter
+{
+    private readonly bool _useColor = useColor;
     private const string ControlCharsToRemove = "\x00\x01\x02\x03\x04\x05\x06\x07\x08\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a";
-
 
     /// <summary>
     /// Writes the scan report to the console in a human-readable format.
