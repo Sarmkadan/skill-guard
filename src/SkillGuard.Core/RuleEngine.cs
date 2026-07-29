@@ -2,7 +2,7 @@ using System.Diagnostics;
 
 namespace SkillGuard.Core;
 
-public sealed class RuleEngine(IReadOnlyList<IScanRule> rules) : IScanner
+public sealed class RuleEngine(IReadOnlyList<IScanRule> rules) : IScanner, IRuleEngine
 {
     public IReadOnlyList<IScanRule> Rules { get; } = rules ?? throw new ArgumentNullException(nameof(rules));
 
