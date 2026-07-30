@@ -1,3 +1,4 @@
+using System;
 using System.Reflection;
 using System.Text.Json;
 
@@ -11,7 +12,7 @@ namespace SkillGuard.Core;
 /// This reporter validates all inputs and produces schema-conformant SARIF output.
 /// For empty reports (zero findings), it emits a valid SARIF document with an empty results array.
 /// </remarks>
-public sealed class SarifReporter : IReporter, ISarifReporter
+public sealed class SarifReporter : IReporter, ISarifReporter, IEquatable<SarifReporter>
 {
     private static readonly JsonSerializerOptions Options = new() { WriteIndented = true };
     private readonly string _toolVersion;
@@ -173,4 +174,29 @@ public sealed class SarifReporter : IReporter, ISarifReporter
         Severity.Medium => "warning",
         _ => "note"
     };
+
+    // Equality members
+
+    /// <summary>
+    /// Determines whether the specified <see cref="SarifReporter"/> is equal to the current instance.
+    /// Equality is based on the <c>_toolVersion</c> field.
+    /// </summary>
+    /// <param name="other">The other <see cref="SarifReporter"/> to compare.</param>
+    /// <returns>True if both instances have the same tool version; otherwise false.</returns>
+    public bool Equals(SarifReporter? other)
+    {
+        if (ReferenceEquals(null, other)) return false;
+        if (ReferenceEquals(this, other)) return true;
+        return _toolVersion == other._toolVersion;
+    }
+
+    /// <inheritdoc/>
+    public override bool Equals(object? obj) => Equals(obj as SarifReporter);
+
+    /// <inheritdoc/>
+    public override int GetHashCode() => HashCode.Combine(_toolVersion);
+
+    public static bool operator ==(SarifReporter? left, SarifReporter? right) => Equals(left, right);
+
+    public static bool operator !=(SarifReporter? left, SarifReporter? right) => !Equals(left, right);
 }
