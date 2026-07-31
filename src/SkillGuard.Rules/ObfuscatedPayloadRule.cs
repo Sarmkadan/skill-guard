@@ -3,7 +3,27 @@ using SkillGuard.Core;
 
 namespace SkillGuard.Rules;
 
-public sealed class ObfuscatedPayloadRule : RegexScanRule
+public class ObfuscatedPayloadRule : IEquatable<ObfuscatedPayloadRule> {
+    public bool Equals(ObfuscatedPayloadRule? other) {
+        // Compare properties here
+    }
+
+    public override bool Equals(object? obj) {
+        // Compare properties here
+    }
+
+    public override int GetHashCode() {
+        // Use HashCode.Combine() here
+    }
+
+    public static bool operator ==(ObfuscatedPayloadRule? left, ObfuscatedPayloadRule? right) {
+        // Compare properties here
+    }
+
+    public static bool operator !=(ObfuscatedPayloadRule? left, ObfuscatedPayloadRule? right) {
+        // Compare properties here
+    }
+}
 {
     public override string Id => "SG004";
     public override string Name => "ObfuscatedPayload";
