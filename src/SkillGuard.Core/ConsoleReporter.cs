@@ -1,3 +1,4 @@
+using System;
 using System.Globalization;
 using System.Text;
 
@@ -11,7 +12,7 @@ namespace SkillGuard.Core;
 /// For empty reports (zero findings), this reporter outputs a summary line indicating no findings were found.
 /// This ensures users always see confirmation that the scan completed successfully, even when no issues are detected.
 /// </remarks>
-public sealed class ConsoleReporter(bool useColor = true) : IReporter, IConsoleReporter
+public sealed class ConsoleReporter(bool useColor = true) : IReporter, IConsoleReporter, IEquatable<ConsoleReporter>
 {
     private readonly bool _useColor = useColor;
     private const string ControlCharsToRemove = "\x00\x01\x02\x03\x04\x05\x06\x07\x08\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a";
@@ -103,4 +104,21 @@ public sealed class ConsoleReporter(bool useColor = true) : IReporter, IConsoleR
         Severity.Low => $"\x1b[36m{text}\x1b[0m",
         _ => text
     };
+
+    // Value equality implementation
+
+    public bool Equals(ConsoleReporter? other)
+    {
+        if (ReferenceEquals(null, other)) return false;
+        if (ReferenceEquals(this, other)) return true;
+        return _useColor == other._useColor;
+    }
+
+    public override bool Equals(object? obj) => obj is ConsoleReporter other && Equals(other);
+
+    public override int GetHashCode() => HashCode.Combine(_useColor);
+
+    public static bool operator ==(ConsoleReporter? left, ConsoleReporter? right) => Equals(left, right);
+
+    public static bool operator !=(ConsoleReporter? left, ConsoleReporter? right) => !Equals(left, right);
 }
