@@ -1,9 +1,10 @@
 using System.Text.RegularExpressions;
+using System.Linq;
 using SkillGuard.Core;
 
 namespace SkillGuard.Rules;
 
-public sealed class CredentialExfiltrationRule : RegexScanRule
+public sealed class CredentialExfiltrationRule : RegexScanRule, IEquatable<CredentialExfiltrationRule>
 {
     public override string Id => "SG002";
     public override string Name => "CredentialExfiltration";
@@ -25,4 +26,31 @@ public sealed class CredentialExfiltrationRule : RegexScanRule
         new(new Regex(@"security\s+find-generic-password|security\s+dump-keychain", RegexOptions.IgnoreCase | RegexOptions.Compiled),
             "Accesses the macOS keychain")
     ];
+
+    // IEquatable implementation
+    public bool Equals(CredentialExfiltrationRule? other)
+    {
+        if (ReferenceEquals(null, other)) return false;
+        if (ReferenceEquals(this, other)) return true;
+
+        return Id == other.Id &&
+               Name == other.Name &&
+               Description == other.Description &&
+               DefaultSeverity == other.DefaultSeverity &&
+               Category == other.Category &&
+               Remediation == other.Remediation &&
+               Patterns.SequenceEqual(other.Patterns);
+    }
+
+    public override bool Equals(object? obj) => Equals(obj as CredentialExfiltrationRule);
+
+    public override int GetHashCode()
+    {
+        // Combine the primary identifying properties; Patterns are omitted for hash stability
+        return HashCode.Combine(Id, Name, Description, DefaultSeverity, Category, Remediation);
+    }
+
+    public static bool operator ==(CredentialExfiltrationRule? left, CredentialExfiltrationRule? right) => Equals(left, right);
+
+    public static bool operator !=(CredentialExfiltrationRule? left, CredentialExfiltrationRule? right) => !Equals(left, right);
 }
