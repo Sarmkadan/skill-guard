@@ -1,9 +1,11 @@
+using System;
 using System.Text.RegularExpressions;
+using System.Linq;
 using SkillGuard.Core;
 
 namespace SkillGuard.Rules;
 
-public sealed class IndirectInjectionRule : RegexScanRule
+public sealed class IndirectInjectionRule : RegexScanRule, IEquatable<IndirectInjectionRule>
 {
     public override string Id => "SG008";
     public override string Name => "IndirectInjection";
@@ -27,4 +29,31 @@ public sealed class IndirectInjectionRule : RegexScanRule
         new(new Regex(@"the\s+(user|human)\s+has\s+(already\s+)?(approved|authorized|consented|confirmed)", RegexOptions.IgnoreCase | RegexOptions.Compiled),
             "Asserts prior user approval to suppress a confirmation prompt"),
     ];
+
+    // IEquatable implementation
+    public bool Equals(IndirectInjectionRule? other)
+    {
+        if (ReferenceEquals(null, other)) return false;
+        if (ReferenceEquals(this, other)) return true;
+
+        return Id == other.Id &&
+               Name == other.Name &&
+               Description == other.Description &&
+               DefaultSeverity == other.DefaultSeverity &&
+               Category == other.Category &&
+               Remediation == other.Remediation &&
+               Patterns.SequenceEqual(other.Patterns);
+    }
+
+    public override bool Equals(object? obj) => Equals(obj as IndirectInjectionRule);
+
+    public override int GetHashCode()
+    {
+        // Combine the primary identifying properties; Patterns are omitted for hash stability
+        return HashCode.Combine(Id, Name, Description, DefaultSeverity, Category, Remediation);
+    }
+
+    public static bool operator ==(IndirectInjectionRule? left, IndirectInjectionRule? right) => Equals(left, right);
+
+    public static bool operator !=(IndirectInjectionRule? left, IndirectInjectionRule? right) => !Equals(left, right);
 }
