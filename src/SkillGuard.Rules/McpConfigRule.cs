@@ -1,9 +1,12 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 using SkillGuard.Core;
 
 namespace SkillGuard.Rules;
 
-public sealed class McpConfigRule : RegexScanRule
+public sealed class McpConfigRule : RegexScanRule, IEquatable<McpConfigRule>
 {
     public override string Id => "SG011";
     public override string Name => "McpConfig";
@@ -32,4 +35,29 @@ public sealed class McpConfigRule : RegexScanRule
         target.Kind is SkillFileKind.McpManifest or SkillFileKind.ClaudeSkill
             or SkillFileKind.AgentsManifest or SkillFileKind.CursorRule
         || target.FilePath.EndsWith(".json", StringComparison.OrdinalIgnoreCase);
+
+    public bool Equals(McpConfigRule? other)
+    {
+        if (ReferenceEquals(null, other)) return false;
+        if (ReferenceEquals(this, other)) return true;
+
+        return Id == other.Id &&
+               Name == other.Name &&
+               Description == other.Description &&
+               DefaultSeverity == other.DefaultSeverity &&
+               Category == other.Category &&
+               Remediation == other.Remediation &&
+               Patterns.SequenceEqual(other.Patterns);
+    }
+
+    public override bool Equals(object? obj) => Equals(obj as McpConfigRule);
+
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(Id, Name, Description, DefaultSeverity, Category, Remediation);
+    }
+
+    public static bool operator ==(McpConfigRule? left, McpConfigRule? right) => Equals(left, right);
+
+    public static bool operator !=(McpConfigRule? left, McpConfigRule? right) => !Equals(left, right);
 }
