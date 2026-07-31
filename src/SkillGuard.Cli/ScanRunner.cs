@@ -1,9 +1,10 @@
+using System;
 using SkillGuard.Core;
 using SkillGuard.Rules;
 
 namespace SkillGuard.Cli;
 
-public static class ScanRunner
+public class ScanRunner : IEquatable<ScanRunner>
 {
     public static int Run(string path, string format, string? outputPath, string failOn, string[] disabledRules, string[] allowedHosts, bool noColor, bool showFixes = false, string? diffRange = null)
     {
@@ -91,4 +92,23 @@ public static class ScanRunner
         "critical" => Severity.Critical,
         _ => throw new ArgumentException($"Unknown --fail-on value '{failOn}'. Supported: note, low, medium, high, critical, never")
     };
+
+    // IEquatable implementation for ScanRunner
+    public bool Equals(ScanRunner? other)
+    {
+        // ScanRunner has no instance state; all instances are considered equal
+        return other is not null;
+    }
+
+    public override bool Equals(object? obj) => Equals(obj as ScanRunner);
+
+    public override int GetHashCode()
+    {
+        // No instance fields to hash; return a constant
+        return HashCode.Combine(0);
+    }
+
+    public static bool operator ==(ScanRunner? left, ScanRunner? right) => Equals(left, right);
+
+    public static bool operator !=(ScanRunner? left, ScanRunner? right) => !Equals(left, right);
 }
