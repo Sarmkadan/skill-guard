@@ -3,7 +3,7 @@ using SkillGuard.Core;
 
 namespace SkillGuard.Rules;
 
-public sealed class PrivilegeEscalationRule : RegexScanRule
+public sealed class PrivilegeEscalationRule : RegexScanRule, IEquatable<PrivilegeEscalationRule>
 {
     public override string Id => "SG009";
     public override string Name => "PrivilegeEscalation";
@@ -29,4 +29,31 @@ public sealed class PrivilegeEscalationRule : RegexScanRule
         new(new Regex(@"\bpkexec\b|\bsudo\s+-i\b|\bsu\s+-\s*(root)?\s*$", RegexOptions.IgnoreCase | RegexOptions.Compiled),
             "Opens an interactive privileged shell", Severity.Medium),
     ];
+
+    // IEquatable implementation
+    public bool Equals(PrivilegeEscalationRule? other)
+    {
+        if (ReferenceEquals(null, other)) return false;
+        if (ReferenceEquals(this, other)) return true;
+
+        return Id == other.Id &&
+               Name == other.Name &&
+               Description == other.Description &&
+               DefaultSeverity == other.DefaultSeverity &&
+               Category == other.Category &&
+               Remediation == other.Remediation &&
+               Patterns.SequenceEqual(other.Patterns);
+    }
+
+    public override bool Equals(object? obj) => Equals(obj as PrivilegeEscalationRule);
+
+    public override int GetHashCode()
+    {
+        // Combine the primary identifying properties; Patterns are omitted for hash stability
+        return HashCode.Combine(Id, Name, Description, DefaultSeverity, Category, Remediation);
+    }
+
+    public static bool operator ==(PrivilegeEscalationRule? left, PrivilegeEscalationRule? right) => Equals(left, right);
+
+    public static bool operator !=(PrivilegeEscalationRule? left, PrivilegeEscalationRule? right) => !Equals(left, right);
 }
