@@ -1,9 +1,10 @@
 using System.Text.RegularExpressions;
 using SkillGuard.Core;
+using System.Linq;
 
 namespace SkillGuard.Rules;
 
-public sealed class DnsExfiltrationRule : RegexScanRule
+public sealed class DnsExfiltrationRule : RegexScanRule, IEquatable<DnsExfiltrationRule>
 {
     public override string Id => "SG007";
     public override string Name => "DnsExfiltration";
@@ -25,4 +26,31 @@ public sealed class DnsExfiltrationRule : RegexScanRule
         new(new Regex(@"\bdig\s+(\+short\s+)?(txt|any)\s+[A-Za-z0-9.-]*\$", RegexOptions.IgnoreCase | RegexOptions.Compiled),
             "TXT/ANY record lookup against a dynamic hostname (DNS command channel)"),
     ];
+
+    // IEquatable implementation
+    public bool Equals(DnsExfiltrationRule? other)
+    {
+        if (ReferenceEquals(null, other)) return false;
+        if (ReferenceEquals(this, other)) return true;
+
+        return Id == other.Id &&
+               Name == other.Name &&
+               Description == other.Description &&
+               DefaultSeverity == other.DefaultSeverity &&
+               Category == other.Category &&
+               Remediation == other.Remediation &&
+               Patterns.SequenceEqual(other.Patterns);
+    }
+
+    public override bool Equals(object? obj) => Equals(obj as DnsExfiltrationRule);
+
+    public override int GetHashCode()
+    {
+        // Combine the primary identifying properties; Patterns are omitted for hash stability
+        return HashCode.Combine(Id, Name, Description, DefaultSeverity, Category, Remediation);
+    }
+
+    public static bool operator ==(DnsExfiltrationRule? left, DnsExfiltrationRule? right) => Equals(left, right);
+
+    public static bool operator !=(DnsExfiltrationRule? left, DnsExfiltrationRule? right) => !Equals(left, right);
 }
