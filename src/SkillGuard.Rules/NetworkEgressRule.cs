@@ -3,7 +3,7 @@ using SkillGuard.Core;
 
 namespace SkillGuard.Rules;
 
-public sealed class NetworkEgressRule : IScanRule, INetworkEgressRule
+public sealed class NetworkEgressRule : IScanRule, INetworkEgressRule, IEquatable<NetworkEgressRule>
 {
     public string Id => "SG005";
     public string Name => "NetworkEgress";
@@ -67,4 +67,28 @@ public sealed class NetworkEgressRule : IScanRule, INetworkEgressRule
             }
         }
     }
+
+    public bool Equals(NetworkEgressRule? other)
+    {
+        if (ReferenceEquals(null, other)) return false;
+        if (ReferenceEquals(this, other)) return true;
+
+        return Id == other.Id &&
+               Name == other.Name &&
+               Description == other.Description &&
+               DefaultSeverity == other.DefaultSeverity &&
+               Category == other.Category &&
+               AllowedHosts.SetEquals(other.AllowedHosts);
+    }
+
+    public override bool Equals(object? obj) => Equals(obj as NetworkEgressRule);
+
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(Id, Name, Description, DefaultSeverity, Category, AllowedHosts);
+    }
+
+    public static bool operator ==(NetworkEgressRule? left, NetworkEgressRule? right) => Equals(left, right);
+
+    public static bool operator !=(NetworkEgressRule? left, NetworkEgressRule? right) => !Equals(left, right);
 }
