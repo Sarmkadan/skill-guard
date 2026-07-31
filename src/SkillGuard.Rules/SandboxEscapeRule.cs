@@ -1,9 +1,11 @@
 using System.Text.RegularExpressions;
 using SkillGuard.Core;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace SkillGuard.Rules;
 
-public sealed class SandboxEscapeRule : RegexScanRule
+public sealed class SandboxEscapeRule : RegexScanRule, IEquatable<SandboxEscapeRule>
 {
     public override string Id => "SG010";
     public override string Name => "SandboxEscape";
@@ -27,4 +29,31 @@ public sealed class SandboxEscapeRule : RegexScanRule
         new(new Regex(@"(-v\s+|--volume[= ])/:/|--volume[= ]/host", RegexOptions.Compiled),
             "Bind-mounts the host root into a container"),
     ];
+
+    // IEquatable implementation
+    public bool Equals(SandboxEscapeRule? other)
+    {
+        if (ReferenceEquals(null, other)) return false;
+        if (ReferenceEquals(this, other)) return true;
+
+        return Id == other.Id &&
+               Name == other.Name &&
+               Description == other.Description &&
+               DefaultSeverity == other.DefaultSeverity &&
+               Category == other.Category &&
+               Remediation == other.Remediation &&
+               Patterns.SequenceEqual(other.Patterns);
+    }
+
+    public override bool Equals(object? obj) => Equals(obj as SandboxEscapeRule);
+
+    public override int GetHashCode()
+    {
+        // Combine the primary identifying properties; Patterns are omitted for hash stability
+        return HashCode.Combine(Id, Name, Description, DefaultSeverity, Category, Remediation);
+    }
+
+    public static bool operator ==(SandboxEscapeRule? left, SandboxEscapeRule? right) => Equals(left, right);
+
+    public static bool operator !=(SandboxEscapeRule? left, SandboxEscapeRule? right) => !Equals(left, right);
 }
