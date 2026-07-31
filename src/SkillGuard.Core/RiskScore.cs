@@ -1,3 +1,7 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
 namespace SkillGuard.Core;
 
 /// <summary>
@@ -12,8 +16,19 @@ namespace SkillGuard.Core;
 /// - RiskScore.Counts uses the same Finding.Severity value that was set during Finding construction
 /// - This ensures consistency: the Finding displayed to users and the RiskScore tally use identical severity values
 /// </remarks>
-public sealed record RiskScore(int Points, char Grade, IReadOnlyDictionary<Severity, int> Counts)
+public sealed class RiskScore : IEquatable<RiskScore>
 {
+    public int Points { get; init; }
+    public char Grade { get; init; }
+    public IReadOnlyDictionary<Severity, int> Counts { get; init; }
+
+    public RiskScore(int points, char grade, IReadOnlyDictionary<Severity, int> counts)
+    {
+        Points = points;
+        Grade = grade;
+        Counts = counts;
+    }
+
     /// <summary>
     /// Gets the weight multiplier for a severity level used in risk score calculation.
     /// </summary>
@@ -86,4 +101,22 @@ public sealed record RiskScore(int Points, char Grade, IReadOnlyDictionary<Sever
         Severity.Low => "low",
         _ => "note"
     };
+
+    // IEquatable<RiskScore> implementation
+    public bool Equals(RiskScore? other)
+    {
+        if (ReferenceEquals(null, other)) return false;
+        if (ReferenceEquals(this, other)) return true;
+        return Points == other.Points &&
+               Grade == other.Grade &&
+               EqualityComparer<IReadOnlyDictionary<Severity, int>>.Default.Equals(Counts, other.Counts);
+    }
+
+    public override bool Equals(object? obj) => Equals(obj as RiskScore);
+
+    public override int GetHashCode() => HashCode.Combine(Points, Grade, Counts);
+
+    public static bool operator ==(RiskScore? left, RiskScore? right) => Equals(left, right);
+
+    public static bool operator !=(RiskScore? left, RiskScore? right) => !Equals(left, right);
 }
