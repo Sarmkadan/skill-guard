@@ -4,7 +4,7 @@ using Xunit;
 
 namespace SkillGuard.Tests;
 
-public class RuleEngineTests : IRuleEngineTests
+public class RuleEngineTests : IRuleEngineTests, IEquatable<RuleEngineTests>
 {
     [Fact]
     public void Scan_OrdersFindingsBySeverityThenLocation()
@@ -64,4 +64,16 @@ public class RuleEngineTests : IRuleEngineTests
         Assert.DoesNotContain(rules, r => r.Id is "SG001" or "SG005");
         Assert.Contains(rules, r => r.Id == "SG002");
     }
+
+    public bool Equals(RuleEngineTests? other) =>
+        other is not null &&
+        GetType() == other.GetType();
+
+    public override bool Equals(object? obj) => Equals(obj as RuleEngineTests);
+
+    public override int GetHashCode() => HashCode.Combine(GetType());
+
+    public static bool operator ==(RuleEngineTests? left, RuleEngineTests? right) => Equals(left, right);
+
+    public static bool operator !=(RuleEngineTests? left, RuleEngineTests? right) => !Equals(left, right);
 }
