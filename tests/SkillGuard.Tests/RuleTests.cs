@@ -1,3 +1,4 @@
+using System;
 using SkillGuard.Core;
 using SkillGuard.Rules;
 using Xunit;
@@ -23,7 +24,7 @@ static class Targets
         """;
 }
 
-public class PromptInjectionRuleTests
+public class PromptInjectionRuleTests : IEquatable<PromptInjectionRuleTests>
 {
     readonly PromptInjectionRule _rule = new();
 
@@ -60,6 +61,28 @@ public class PromptInjectionRuleTests
     {
         Assert.Empty(_rule.Scan(Targets.Skill(Targets.CleanSkill)));
     }
+
+    // IEquatable implementation
+    public bool Equals(PromptInjectionRuleTests? other)
+    {
+        if (ReferenceEquals(null, other)) return false;
+        if (ReferenceEquals(this, other)) return true;
+
+        // Compare based on the rule's identifier (Id) to determine equality
+        return _rule.Id == other._rule.Id;
+    }
+
+    public override bool Equals(object? obj) => Equals(obj as PromptInjectionRuleTests);
+
+    public override int GetHashCode()
+    {
+        // Use the rule's Id for hash code generation
+        return HashCode.Combine(_rule.Id);
+    }
+
+    public static bool operator ==(PromptInjectionRuleTests? left, PromptInjectionRuleTests? right) => Equals(left, right);
+
+    public static bool operator !=(PromptInjectionRuleTests? left, PromptInjectionRuleTests? right) => !Equals(left, right);
 }
 
 public class CredentialExfiltrationRuleTests
