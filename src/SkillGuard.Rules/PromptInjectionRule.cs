@@ -1,9 +1,10 @@
 using System.Text.RegularExpressions;
+using System.Linq;
 using SkillGuard.Core;
 
 namespace SkillGuard.Rules;
 
-public sealed class PromptInjectionRule : RegexScanRule
+public sealed class PromptInjectionRule : RegexScanRule, IEquatable<PromptInjectionRule>
 {
     public override string Id => "SG001";
     public override string Name => "PromptInjection";
@@ -141,4 +142,31 @@ public sealed class PromptInjectionRule : RegexScanRule
         // Default: return the current severity
         return currentSeverity;
     }
+
+    // IEquatable implementation
+    public bool Equals(PromptInjectionRule? other)
+    {
+        if (ReferenceEquals(null, other)) return false;
+        if (ReferenceEquals(this, other)) return true;
+
+        return Id == other.Id &&
+               Name == other.Name &&
+               Description == other.Description &&
+               DefaultSeverity == other.DefaultSeverity &&
+               Category == other.Category &&
+               Remediation == other.Remediation &&
+               Patterns.SequenceEqual(other.Patterns);
+    }
+
+    public override bool Equals(object? obj) => Equals(obj as PromptInjectionRule);
+
+    public override int GetHashCode()
+    {
+        // Combine primary identifying properties; Patterns omitted for hash stability
+        return HashCode.Combine(Id, Name, Description, DefaultSeverity, Category, Remediation);
+    }
+
+    public static bool operator ==(PromptInjectionRule? left, PromptInjectionRule? right) => Equals(left, right);
+
+    public static bool operator !=(PromptInjectionRule? left, PromptInjectionRule? right) => !Equals(left, right);
 }
