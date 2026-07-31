@@ -1,29 +1,11 @@
 using System.Text.RegularExpressions;
 using SkillGuard.Core;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace SkillGuard.Rules;
 
-public class ObfuscatedPayloadRule : IEquatable<ObfuscatedPayloadRule> {
-    public bool Equals(ObfuscatedPayloadRule? other) {
-        // Compare properties here
-    }
-
-    public override bool Equals(object? obj) {
-        // Compare properties here
-    }
-
-    public override int GetHashCode() {
-        // Use HashCode.Combine() here
-    }
-
-    public static bool operator ==(ObfuscatedPayloadRule? left, ObfuscatedPayloadRule? right) {
-        // Compare properties here
-    }
-
-    public static bool operator !=(ObfuscatedPayloadRule? left, ObfuscatedPayloadRule? right) {
-        // Compare properties here
-    }
-}
+public sealed class ObfuscatedPayloadRule : RegexScanRule, IEquatable<ObfuscatedPayloadRule>
 {
     public override string Id => "SG004";
     public override string Name => "ObfuscatedPayload";
@@ -47,4 +29,31 @@ public class ObfuscatedPayloadRule : IEquatable<ObfuscatedPayloadRule> {
         new(new Regex(@"powershell[^\n]*\s-(e|enc|encodedcommand)\s", RegexOptions.IgnoreCase | RegexOptions.Compiled),
             "PowerShell encoded command execution", Severity.Critical)
     ];
+
+    // IEquatable implementation
+    public bool Equals(ObfuscatedPayloadRule? other)
+    {
+        if (ReferenceEquals(null, other)) return false;
+        if (ReferenceEquals(this, other)) return true;
+
+        return Id == other.Id &&
+               Name == other.Name &&
+               Description == other.Description &&
+               DefaultSeverity == other.DefaultSeverity &&
+               Category == other.Category &&
+               Remediation == other.Remediation &&
+               Patterns.SequenceEqual(other.Patterns);
+    }
+
+    public override bool Equals(object? obj) => Equals(obj as ObfuscatedPayloadRule);
+
+    public override int GetHashCode()
+    {
+        // Patterns are omitted for hash stability
+        return HashCode.Combine(Id, Name, Description, DefaultSeverity, Category, Remediation);
+    }
+
+    public static bool operator ==(ObfuscatedPayloadRule? left, ObfuscatedPayloadRule? right) => Equals(left, right);
+
+    public static bool operator !=(ObfuscatedPayloadRule? left, ObfuscatedPayloadRule? right) => !Equals(left, right);
 }
