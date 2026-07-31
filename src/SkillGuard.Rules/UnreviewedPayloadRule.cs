@@ -3,7 +3,7 @@ using SkillGuard.Core;
 
 namespace SkillGuard.Rules;
 
-public sealed class UnreviewedPayloadRule : IScanRule
+public sealed class UnreviewedPayloadRule : IScanRule, IEquatable<UnreviewedPayloadRule>
 {
     public string Id => "SG006";
     public string Name => "UnreviewedPayload";
@@ -53,4 +53,27 @@ public sealed class UnreviewedPayloadRule : IScanRule
             }
         }
     }
+
+    public bool Equals(UnreviewedPayloadRule? other)
+    {
+        if (ReferenceEquals(null, other)) return false;
+        if (ReferenceEquals(this, other)) return true;
+
+        return Id == other.Id &&
+               Name == other.Name &&
+               Description == other.Description &&
+               DefaultSeverity == other.DefaultSeverity &&
+               Category == other.Category;
+    }
+
+    public override bool Equals(object? obj) => Equals(obj as UnreviewedPayloadRule);
+
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(Id, Name, Description, DefaultSeverity, Category);
+    }
+
+    public static bool operator ==(UnreviewedPayloadRule? left, UnreviewedPayloadRule? right) => Equals(left, right);
+
+    public static bool operator !=(UnreviewedPayloadRule? left, UnreviewedPayloadRule? right) => !Equals(left, right);
 }
