@@ -5,23 +5,17 @@ namespace SkillGuard.Rules;
 
 public sealed class NetworkEgressRule : IScanRule, INetworkEgressRule, IEquatable<NetworkEgressRule>
 {
-    public string Id => "SG005";
-    public string Name => "NetworkEgress";
-    public string Description => "Flags outbound network calls to hosts outside the allowlist";
+    public string Id => NetworkEgressRuleConstants.Id;
+    public string Name => NetworkEgressRuleConstants.Name;
+    public string Description => NetworkEgressRuleConstants.Description;
     public Severity DefaultSeverity => Severity.Medium;
     public FindingCategory Category => FindingCategory.NetworkEgress;
 
-    public static readonly IReadOnlySet<string> DefaultAllowedHosts = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-    {
-        "github.com", "raw.githubusercontent.com", "api.github.com", "objects.githubusercontent.com",
-        "gitlab.com", "nuget.org", "api.nuget.org", "www.nuget.org",
-        "registry.npmjs.org", "pypi.org", "files.pythonhosted.org", "crates.io",
-        "dot.net", "dotnet.microsoft.com", "aka.ms", "localhost", "127.0.0.1"
-    };
+    public static readonly IReadOnlySet<string> DefaultAllowedHosts = new HashSet<string>(NetworkEgressRuleConstants.DefaultAllowedHosts, StringComparer.OrdinalIgnoreCase);
 
-    private static readonly Regex UrlPattern = new(@"https?://([A-Za-z0-9.-]+)(:\d+)?[^\s""'`\)\]>]*", RegexOptions.Compiled);
-    private static readonly Regex RawIpPattern = new(@"https?://(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})", RegexOptions.Compiled);
-    private static readonly Regex NetClientPattern = new(@"\b(curl|wget|Invoke-WebRequest|Invoke-RestMethod|nc)\b", RegexOptions.Compiled);
+    private static readonly Regex UrlPattern = new(NetworkEgressRuleConstants.UrlPattern, RegexOptions.Compiled);
+    private static readonly Regex RawIpPattern = new(NetworkEgressRuleConstants.RawIpPattern, RegexOptions.Compiled);
+    private static readonly Regex NetClientPattern = new(NetworkEgressRuleConstants.NetClientPattern, RegexOptions.Compiled);
 
     public IReadOnlySet<string> AllowedHosts { get; }
 
@@ -56,14 +50,14 @@ public sealed class NetworkEgressRule : IScanRule, INetworkEgressRule, IEquatabl
                     _ => Severity.Low
                 };
                 var reason = isRawIp
-                    ? $"Network egress to raw IP address {host}"
+                    ? string.Format(NetworkEgressRuleConstants.ReasonRawIp, host)
                     : invokesClient
-                        ? $"Network client invocation targeting unexpected host {host}"
-                        : $"Reference to unexpected external host {host}";
+                        ? string.Format(NetworkEgressRuleConstants.ReasonClientInvocation, host)
+                        : string.Format(NetworkEgressRuleConstants.ReasonReference, host);
                 yield return new Finding(Id, Name, severity, Category, reason,
                     SourceLocation.At(target.FilePath, i + 1, match.Index + 1, match.Length),
-                    line.Trim().Length > 200 ? line.Trim()[..200] : line.Trim())
-                { Remediation = "Restrict skill network access to reviewed, allowlisted hosts" };
+                    line.Trim().Length > NetworkEgressRuleConstants.MaxReasonLength ? line.Trim()[..NetworkEgressRuleConstants.MaxReasonLength] : line.Trim())
+                { Remediation = NetworkEgressRuleConstants.RemediationMessage };
             }
         }
     }
