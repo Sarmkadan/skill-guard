@@ -21,7 +21,47 @@ namespace SkillGuard.Core;
 /// <item><description>This same severity value is used by RiskScore aggregation</description></item>
 /// </list>
 /// </remarks>
-public sealed record PatternDefinition(Regex Pattern, string Message, Severity? SeverityOverride = null);
+public sealed class PatternDefinition : IEquatable<PatternDefinition>
+{
+    public Regex Pattern { get; }
+    public string Message { get; }
+    public Severity? SeverityOverride { get; }
+
+    public PatternDefinition(Regex pattern, string message, Severity? severityOverride = null)
+    {
+        Pattern = pattern;
+        Message = message;
+        SeverityOverride = severityOverride;
+    }
+
+    public bool Equals(PatternDefinition? other)
+    {
+        if (other is null) return false;
+        return Pattern == other.Pattern &&
+               Message == other.Message &&
+               SeverityOverride == other.SeverityOverride;
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return obj is PatternDefinition other && Equals(other);
+    }
+
+    public override int GetHashCode()
+    {
+        return System.HashCode.Combine(Pattern, Message, SeverityOverride);
+    }
+
+    public static bool operator ==(PatternDefinition? left, PatternDefinition? right)
+    {
+        return EqualityComparer<PatternDefinition>.Default.Equals(left, right);
+    }
+
+    public static bool operator !=(PatternDefinition? left, PatternDefinition? right)
+    {
+        return !(left == right);
+    }
+}
 
 /// <summary>
 /// Abstract base class for rules that scan files using regular expressions.
