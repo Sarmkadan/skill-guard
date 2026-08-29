@@ -12,6 +12,11 @@ public sealed class GitDiffFileDiscovery : IFileDiscovery
     private readonly string _basePath;
 
     /// <summary>
+    /// Gets or sets the optional sink for verbose git diff diagnostics.
+    /// </summary>
+    public static Action<string>? DiagnosticSink { get; set; }
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="GitDiffFileDiscovery"/> class.
     /// </summary>
     /// <param name="diffRange">The git diff range to scan (e.g., "origin/main...HEAD").</param>
@@ -60,14 +65,18 @@ public sealed class GitDiffFileDiscovery : IFileDiscovery
 
         // Filter to only scannable files
         var defaultDiscovery = new DefaultFileDiscovery();
+        var scannableFileCount = 0;
         foreach (var file in changedFiles)
         {
             var fullPath = Path.Combine(_basePath, file);
             if (File.Exists(fullPath) && SkillFileClassifier.IsScannable(fullPath))
             {
+                scannableFileCount++;
                 yield return Path.GetFullPath(fullPath);
             }
         }
+
+        DiagnosticSink?.Invoke($"skill-guard[git-diff]: scannable-files={scannableFileCount}");
     }
 
     /// <summary>
@@ -98,6 +107,8 @@ public sealed class GitDiffFileDiscovery : IFileDiscovery
             CreateNoWindow = true
         };
 
+        DiagnosticSink?.Invoke($"skill-guard[git-diff]: command=\"git {ToSingleLine(processStart.Arguments)}\"");
+
         string output;
         string error;
         int exitCode;
@@ -127,6 +138,12 @@ public sealed class GitDiffFileDiscovery : IFileDiscovery
             yield break;
         }
 
+        DiagnosticSink?.Invoke($"skill-guard[git-diff]: exit-code={exitCode}");
+        if (!string.IsNullOrWhiteSpace(error))
+        {
+            DiagnosticSink?.Invoke($"skill-guard[git-diff]: stderr=\"{ToSingleLine(error.Trim())}\"");
+        }
+
         if (exitCode != 0)
         {
             // Git command failed - log to stderr but don't throw
@@ -140,17 +157,27 @@ public sealed class GitDiffFileDiscovery : IFileDiscovery
 
         if (string.IsNullOrWhiteSpace(output))
         {
+            DiagnosticSink?.Invoke("skill-guard[git-diff]: changed-files=0");
             yield break;
         }
 
         // Split by newlines and filter out empty entries
-        foreach (var line in output.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries))
+        var changedFiles = output.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(line => line.Trim())
+            .Where(line => !string.IsNullOrWhiteSpace(line))
+            .ToArray();
+
+        DiagnosticSink?.Invoke($"skill-guard[git-diff]: changed-files={changedFiles.Length}");
+
+        foreach (var file in changedFiles)
         {
-            var trimmed = line.Trim();
-            if (!string.IsNullOrWhiteSpace(trimmed))
-            {
-                yield return trimmed;
-            }
+            yield return file;
         }
     }
+
+    private static string ToSingleLine(string value) =>
+        value.Replace("\\", "\\\\", StringComparison.Ordinal)
+            .Replace("\"", "\\\"", StringComparison.Ordinal)
+            .Replace("\r", "\\r", StringComparison.Ordinal)
+            .Replace("\n", "\\n", StringComparison.Ordinal);
 }
