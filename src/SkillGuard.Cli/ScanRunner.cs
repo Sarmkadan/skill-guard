@@ -6,6 +6,11 @@ namespace SkillGuard.Cli;
 
 public class ScanRunner : IEquatable<ScanRunner>
 {
+    private const string FormatSarif = "sarif";
+    private const string FormatConsole = "console";
+    private const int ExitSuccess = 0;
+    private const int ExitFailure = 1;
+
     public static int Run(string path, string format, string? outputPath, string failOn, string[] disabledRules, string[] allowedHosts, bool noColor, bool showFixes = false, string? diffRange = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
@@ -36,7 +41,7 @@ public class ScanRunner : IEquatable<ScanRunner>
             {
                 Console.Error.WriteLine($"skill-guard: no scannable files found under '{path}'");
             }
-            return 0;
+            return ExitSuccess;
         }
 
         var engine = new RuleEngine(rules);
@@ -44,9 +49,9 @@ public class ScanRunner : IEquatable<ScanRunner>
 
         IReporter reporter = format.ToLowerInvariant() switch
         {
-            "sarif" => new SarifReporter(),
-            "console" => new ConsoleReporter(!noColor && outputPath is null),
-            _ => throw new ArgumentException($"Unknown format '{format}'. Supported: console, sarif")
+            FormatSarif => new SarifReporter(),
+            FormatConsole => new ConsoleReporter(!noColor && outputPath is null),
+            _ => throw new ArgumentException($"Unknown format '{format}'. Supported: {FormatConsole}, {FormatSarif}")
         };
 
         if (outputPath is null)
@@ -63,7 +68,7 @@ public class ScanRunner : IEquatable<ScanRunner>
         if (showFixes && report.HasFindings) WriteFixes(report, Console.Out);
 
         var threshold = ParseThreshold(failOn);
-        return threshold is { } value && report.CountAtOrAbove(value) > 0 ? 1 : 0;
+        return threshold is { } value && report.CountAtOrAbove(value) > 0 ? ExitFailure : ExitSuccess;
     }
 
     private static void WriteFixes(ScanReport report, TextWriter output)
