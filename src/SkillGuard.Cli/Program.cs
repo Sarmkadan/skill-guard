@@ -4,7 +4,7 @@ using SkillGuard.Core;
 using SkillGuard.Rules;
 
 var pathArgument = new Argument<string>("path", () => ".", "File or directory to scan");
-var formatOption = new Option<string>(["--format", "-f"], () => "console", "Output format: console or sarif");
+var formatOption = new Option<string>(["--format", "-f"], () => "console", "Output format: console, sarif or json");
 var outputOption = new Option<string?>(["--output", "-o"], "Write report to file instead of stdout");
 var failOnOption = new Option<string>(["--fail-on"], () => "high", "Minimum severity that causes a non-zero exit: note, low, medium, high, critical, never");
 var disableOption = new Option<string[]>(["--disable"], "Rule ids to disable") { AllowMultipleArgumentsPerToken = true };
