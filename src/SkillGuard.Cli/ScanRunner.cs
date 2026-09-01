@@ -7,6 +7,7 @@ namespace SkillGuard.Cli;
 public static class ScanRunner
 {
     private const string FormatSarif = "sarif";
+    private const string FormatJson = "json";
     private const string FormatConsole = "console";
     private const int ExitSuccess = 0;
     private const int ExitFailure = 1;
@@ -19,9 +20,9 @@ public static class ScanRunner
         ArgumentException.ThrowIfNullOrWhiteSpace(failOn);
 
         var normalizedFormat = format.ToLowerInvariant();
-        if (normalizedFormat is not FormatSarif and not FormatConsole)
+        if (normalizedFormat is not FormatSarif and not FormatJson and not FormatConsole)
         {
-            Console.Error.WriteLine($"skill-guard: unknown format '{format}'. Supported formats: {FormatConsole}, {FormatSarif}");
+            Console.Error.WriteLine($"skill-guard: unknown format '{format}'. Supported formats: {FormatConsole}, {FormatSarif}, {FormatJson}");
             return ExitUsageError;
         }
 
@@ -55,9 +56,12 @@ public static class ScanRunner
         var engine = new RuleEngine(rules);
         var report = engine.Scan(files.Select(ScanTarget.FromFile));
 
-        IReporter reporter = normalizedFormat == FormatSarif
-            ? new SarifReporter()
-            : new ConsoleReporter(!noColor && outputPath is null);
+        IReporter reporter = normalizedFormat switch
+        {
+            FormatSarif => new SarifReporter(),
+            FormatJson => new JsonReporter(),
+            _ => new ConsoleReporter(!noColor && outputPath is null)
+        };
 
         if (outputPath is null)
         {
