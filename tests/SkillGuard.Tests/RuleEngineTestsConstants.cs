@@ -14,6 +14,8 @@ internal static class RuleEngineTestsConstants
     public const string RuleIdSg009 = "SG009";
     public const string RuleIdSg010 = "SG010";
     public const string RuleIdSg011 = "SG011";
+    public const string RuleIdSg012 = "SG012";
+    public const string RuleIdSg013 = "SG013";
 
     // Case variations for testing
     public const string RuleIdSg001Lower = "sg001";

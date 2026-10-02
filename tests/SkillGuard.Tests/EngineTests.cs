@@ -58,7 +58,7 @@ public class RuleEngineTests : IRuleEngineTests, IEquatable<RuleEngineTests>
     /// Verifies that the default rule catalog contains the expected rule IDs from SG001 to SG011.
     /// </summary>
     [Fact]
-    public void RuleCatalog_ExposesRulesSg001ThroughSg011()
+    public void RuleCatalog_ExposesRulesSg001ThroughSg013()
     {
         var ids = RuleCatalog.CreateDefaultRules().Select(r => r.Id).Order().ToList();
         Assert.Equal(
@@ -73,7 +73,9 @@ public class RuleEngineTests : IRuleEngineTests, IEquatable<RuleEngineTests>
                 RuleEngineTestsConstants.RuleIdSg008,
                 RuleEngineTestsConstants.RuleIdSg009,
                 RuleEngineTestsConstants.RuleIdSg010,
-                RuleEngineTestsConstants.RuleIdSg011
+                RuleEngineTestsConstants.RuleIdSg011,
+                RuleEngineTestsConstants.RuleIdSg012,
+                RuleEngineTestsConstants.RuleIdSg013
             ],
             ids);
     }
