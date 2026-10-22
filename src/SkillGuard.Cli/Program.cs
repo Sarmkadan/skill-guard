@@ -29,6 +29,17 @@ scanCommand.SetHandler(context =>
     var noColor = context.ParseResult.GetValueForOption(noColorOption);
     var showFixes = context.ParseResult.GetValueForOption(fixOption);
     var diffRange = context.ParseResult.GetValueForOption(diffOption);
+
+    var options = new SkillGuardOptions { AllowedHosts = allowHosts, DisabledRuleIds = disabled };
+    var errors = options.Validate(RuleCatalog.CreateDefaultRules().Select(rule => rule.Id));
+    if (errors.Count > 0)
+    {
+        Console.Error.WriteLine($"skill-guard: invalid options ({errors.Count} error{(errors.Count == 1 ? "" : "s")}):");
+        foreach (var error in errors) Console.Error.WriteLine($"  - {error}");
+        context.ExitCode = 2;
+        return;
+    }
+
     context.ExitCode = ScanRunner.Run(path, format, output, failOn, disabled, allowHosts, noColor, showFixes, diffRange);
 });
 
