@@ -13,7 +13,7 @@ public static class ScanRunner
     private const int ExitFailure = 1;
     private const int ExitUsageError = 2;
 
-    public static int Run(string path, string format, string? outputPath, string failOn, string[] disabledRules, string[] allowedHosts, bool noColor, bool showFixes = false, string? diffRange = null)
+    public static int Run(string path, string format, string? outputPath, string failOn, string[] disabledRules, string[] allowedHosts, bool noColor, bool showFixes = false, string? diffRange = null, IReadOnlyList<string>? credentialFilePatterns = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         ArgumentException.ThrowIfNullOrWhiteSpace(format);
@@ -26,7 +26,7 @@ public static class ScanRunner
             return ExitUsageError;
         }
 
-        var rules = RuleCatalog.Filter(RuleCatalog.CreateDefaultRules(allowedHosts), disabledRules);
+        var rules = RuleCatalog.Filter(RuleCatalog.CreateDefaultRules(allowedHosts, credentialFilePatterns), disabledRules);
 
         IFileDiscovery discovery;
         if (diffRange != null)

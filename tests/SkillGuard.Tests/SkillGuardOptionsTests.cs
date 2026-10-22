@@ -119,4 +119,81 @@ public class SkillGuardOptionsTests
         Assert.Contains(errors, error => error.StartsWith("RegexTimeout"));
         Assert.Contains(errors, error => error.StartsWith("MaxFileSizeBytes"));
     }
+
+    [Fact]
+    public void Validate_DefaultCredentialFilePatterns_ReturnsNoErrors()
+    {
+        Assert.Empty(new SkillGuardOptions().Validate(KnownRuleIds));
+        Assert.Empty(new SkillGuardOptions { CredentialFilePatterns = CredentialExfiltrationRule.DefaultFilePatterns }.Validate(KnownRuleIds));
+    }
+
+    [Fact]
+    public void Validate_InvalidRegexPattern_ReportsPatternTextAndIndex()
+    {
+        var options = new SkillGuardOptions { CredentialFilePatterns = [@"\.netrc", "(unclosed"] };
+
+        var error = Assert.Single(options.Validate(KnownRuleIds));
+        Assert.StartsWith("CredentialFilePatterns[1] '(unclosed' is not a valid regular expression", error);
+    }
+
+    [Fact]
+    public void Validate_EmptyCredentialFilePatterns_ReportsErrorWhenRuleEnabled()
+    {
+        var options = new SkillGuardOptions { CredentialFilePatterns = [] };
+
+        var error = Assert.Single(options.Validate(KnownRuleIds));
+        Assert.StartsWith("CredentialFilePatterns must not be empty", error);
+    }
+
+    [Fact]
+    public void Validate_EmptyCredentialFilePatterns_AcceptedWhenRuleDisabled()
+    {
+        var options = new SkillGuardOptions { CredentialFilePatterns = [], DisabledRuleIds = ["sg002"] };
+
+        Assert.Empty(options.Validate(KnownRuleIds));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Validate_BlankCredentialFilePattern_ReportsIndex(string pattern)
+    {
+        var options = new SkillGuardOptions { CredentialFilePatterns = [@"\.netrc", pattern] };
+
+        var error = Assert.Single(options.Validate(KnownRuleIds));
+        Assert.StartsWith("CredentialFilePatterns[1]", error);
+    }
+
+    [Fact]
+    public void Validate_DuplicateCredentialFilePattern_ReportsBothIndices()
+    {
+        var options = new SkillGuardOptions { CredentialFilePatterns = [@"\.netrc", @"\.npmrc", @"\.NETRC"] };
+
+        var error = Assert.Single(options.Validate(KnownRuleIds));
+        Assert.Equal(@"CredentialFilePatterns[2] '\.NETRC' duplicates CredentialFilePatterns[0]", error);
+    }
+
+    [Theory]
+    [InlineData("*.pem")]
+    [InlineData("x?")]
+    public void Validate_PatternMatchingEmptyString_IsRejected(string pattern)
+    {
+        var options = new SkillGuardOptions { CredentialFilePatterns = [pattern] };
+
+        var error = Assert.Single(options.Validate(KnownRuleIds));
+        Assert.StartsWith($"CredentialFilePatterns[0] '{pattern}'", error);
+    }
+
+    [Fact]
+    public void Validate_MultipleCredentialFilePatternErrors_ReportsEveryEntry()
+    {
+        var options = new SkillGuardOptions { CredentialFilePatterns = ["(bad", @"\.netrc", @"\.netrc", "[also"] };
+
+        var errors = options.Validate(KnownRuleIds);
+
+        Assert.Equal(3, errors.Count);
+        Assert.Contains(errors, error => error.StartsWith("CredentialFilePatterns[0] '(bad'"));
+        Assert.Contains(errors, error => error.StartsWith("CredentialFilePatterns[2] '" + @"\.netrc" + "' duplicates"));
+        Assert.Contains(errors, error => error.StartsWith("CredentialFilePatterns[3] '[also'"));
+    }
 }
