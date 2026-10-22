@@ -4,12 +4,12 @@ namespace SkillGuard.Rules;
 
 public static class RuleCatalog
 {
-    public static IReadOnlyList<IScanRule> CreateDefaultRules(IEnumerable<string>? allowedHosts = null)
+    public static IReadOnlyList<IScanRule> CreateDefaultRules(IEnumerable<string>? allowedHosts = null, IReadOnlyList<string>? credentialFilePatterns = null)
     {
         return
         [
             new PromptInjectionRule(),
-            new CredentialExfiltrationRule(),
+            new CredentialExfiltrationRule(credentialFilePatterns),
             new DangerousShellRule(),
             new ObfuscatedPayloadRule(),
             new NetworkEgressRule(allowedHosts),

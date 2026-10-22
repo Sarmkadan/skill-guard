@@ -14,11 +14,22 @@ public sealed class SkillGuardOptions
 
     private const int MaxHostnameLength = 253;
 
+    /// <summary>Id of the credential exfiltration rule, which owns <see cref="CredentialFilePatterns"/>.</summary>
+    private const string CredentialExfiltrationRuleId = "SG002";
+
     /// <summary>Additional egress hosts to allow beyond the built-in allowlist (hostnames only).</summary>
     public IReadOnlyList<string> AllowedHosts { get; init; } = [];
 
     /// <summary>Rule ids to disable (for example <c>SG005</c>). Matched case-insensitively.</summary>
     public IReadOnlyList<string> DisabledRuleIds { get; init; } = [];
+
+    /// <summary>
+    /// Regular expressions that identify sensitive files (for example <c>\.aws/credentials</c>) for the credential
+    /// exfiltration rule (SG002). Null means the rule's built-in defaults. An empty list is only accepted when SG002 is
+    /// disabled. Each entry must be a non-empty regex that does not match the empty string, and entries must be unique
+    /// (case-insensitively, as matching is case-insensitive).
+    /// </summary>
+    public IReadOnlyList<string>? CredentialFilePatterns { get; init; }
 
     /// <summary>Per-match timeout for regular expressions. Must be greater than zero and at most <see cref="MaxRegexTimeout"/>.</summary>
     public TimeSpan RegexTimeout { get; init; } = TimeSpan.FromSeconds(5);
@@ -63,7 +74,54 @@ public sealed class SkillGuardOptions
             errors.Add($"MaxFileSizeBytes {MaxFileSizeBytes} must be greater than 0");
         }
 
+        if (CredentialFilePatterns is { } patterns)
+        {
+            if (patterns.Count == 0 && !DisabledRuleIds.Contains(CredentialExfiltrationRuleId, StringComparer.OrdinalIgnoreCase))
+            {
+                errors.Add($"CredentialFilePatterns must not be empty unless {CredentialExfiltrationRuleId} is disabled");
+            }
+
+            ValidateCredentialFilePatterns(patterns, errors);
+        }
+
         return errors;
+    }
+
+    private static void ValidateCredentialFilePatterns(IReadOnlyList<string> patterns, List<string> errors)
+    {
+        // Keyed case-insensitively because the rule compiles its patterns with RegexOptions.IgnoreCase.
+        var firstIndexByPattern = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+        for (var i = 0; i < patterns.Count; i++)
+        {
+            var pattern = patterns[i];
+
+            if (string.IsNullOrWhiteSpace(pattern))
+            {
+                errors.Add($"CredentialFilePatterns[{i}] '{pattern}' must not be empty");
+                continue;
+            }
+
+            if (firstIndexByPattern.TryGetValue(pattern, out var firstIndex))
+            {
+                errors.Add($"CredentialFilePatterns[{i}] '{pattern}' duplicates CredentialFilePatterns[{firstIndex}]");
+                continue;
+            }
+
+            firstIndexByPattern[pattern] = i;
+
+            try
+            {
+                if (new Regex(pattern, RegexOptions.IgnoreCase).IsMatch(string.Empty))
+                {
+                    errors.Add($"CredentialFilePatterns[{i}] '{pattern}' matches the empty string, which would flag every file read");
+                }
+            }
+            catch (ArgumentException ex)
+            {
+                errors.Add($"CredentialFilePatterns[{i}] '{pattern}' is not a valid regular expression: {ex.Message}");
+            }
+        }
     }
 
     private static bool IsValidHostname(string? host)

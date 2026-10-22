@@ -40,7 +40,7 @@ scanCommand.SetHandler(context =>
         return;
     }
 
-    context.ExitCode = ScanRunner.Run(path, format, output, failOn, disabled, allowHosts, noColor, showFixes, diffRange);
+    context.ExitCode = ScanRunner.Run(path, format, output, failOn, disabled, allowHosts, noColor, showFixes, diffRange, options.CredentialFilePatterns);
 });
 
 var rulesCommand = new Command("rules", "List available rules");
