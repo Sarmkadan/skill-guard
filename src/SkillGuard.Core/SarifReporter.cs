@@ -79,6 +79,7 @@ public sealed class SarifReporter : IReporter, ISarifReporter, IEquatable<SarifR
                         {
                             startLine = f.Location.Line,
                             startColumn = f.Location.Column,
+                            endLine = f.Location.EndLine,
                             endColumn = f.Location.EndColumn,
                             snippet = new { text = f.Snippet }
                         }
@@ -151,7 +152,7 @@ public sealed class SarifReporter : IReporter, ISarifReporter, IEquatable<SarifR
                                 {
                                     startLine = finding.Fix.Region.Line,
                                     startColumn = finding.Fix.Region.Column,
-                                    endLine = finding.Fix.Region.Line,
+                                    endLine = finding.Fix.Region.EndLine,
                                     endColumn = finding.Fix.Region.EndColumn
                                 },
                                 insertedContent = new { text = finding.Fix.ReplacementText }

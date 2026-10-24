@@ -28,6 +28,8 @@ public sealed class JsonReporter : IReporter
                 file = f.Location.FilePath,
                 line = f.Location.Line,
                 column = f.Location.Column,
+                endLine = f.Location.EndLine,
+                endColumn = f.Location.EndColumn,
                 snippet = f.Snippet
             }).ToArray(),
             fileCount = report.FilesScanned,
