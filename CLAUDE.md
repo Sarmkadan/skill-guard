@@ -23,7 +23,7 @@ Tests live in `tests/SkillGuard.Tests`; `Corpus/KnownBad/` holds sample maliciou
 
 ## Lint / format
 
-No `.editorconfig` or analyzers configured. `Nullable` and `ImplicitUsings` are enabled in every project; treat nullable warnings as real. `dotnet format` is the only formatter.
+`.editorconfig` at the repo root sets whitespace (LF, UTF-8, 4 spaces for `.cs`, 2 for json/yml/xml/csproj) and C# style/naming rules (file-scoped namespaces, braces, `_camelCase` private fields); no analyzers are enforced in the build. `Nullable` and `ImplicitUsings` are enabled in every project; treat nullable warnings as real. `dotnet format` is the only formatter.
 
 ## Layout
 
