@@ -100,7 +100,7 @@ public sealed class CredentialExfiltrationRuleIntegrationTests : IDisposable
 
         // The benign snippet (cat ./config/local.json) yields no finding
         // Verify no other credential exfiltration findings exist
-        Assert.Equal(1, credFindings.Count);
+        Assert.Single(credFindings);
     }
 
     [Fact]

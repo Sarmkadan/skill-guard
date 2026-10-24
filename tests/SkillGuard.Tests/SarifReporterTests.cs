@@ -407,7 +407,6 @@ public class SarifReporterTests
 
         // Verify fixes array exists and contains the fix
         Assert.True(resultItem.TryGetProperty("fixes", out var fixes));
-        Assert.NotNull(fixes);
         Assert.Single(fixes.EnumerateArray());
 
         var fix = fixes[0];

@@ -34,10 +34,8 @@ public sealed class RiskScore : IEquatable<RiskScore>
     /// </summary>
     /// <param name="severity">The severity level</param>
     /// <returns>The weight multiplier for the severity</returns>
-    /// <exception cref="ArgumentNullException">Thrown if severity is null</exception>
     public static int Weight(Severity severity)
     {
-        ArgumentNullException.ThrowIfNull(severity);
         return severity switch
         {
             Severity.Critical => 40,
