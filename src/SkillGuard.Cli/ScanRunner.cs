@@ -106,7 +106,7 @@ public static class ScanRunner
             output.WriteLine(group.Key);
             foreach (var finding in group)
             {
-                output.WriteLine($" {finding.Location.Line}:{finding.Location.Column} {finding.RuleId} {finding.Message}");
+                output.WriteLine($" {finding.Location.PositionLabel} {finding.RuleId} {finding.Message}");
                 output.WriteLine($" fix: {FixSuggester.Suggest(finding)}");
             }
             output.WriteLine();

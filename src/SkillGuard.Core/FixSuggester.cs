@@ -95,6 +95,7 @@ public static class FixSuggester
             finding.Location.FilePath,
             finding.Location.Line,
             finding.Location.Column,
+            finding.Location.EndLine,
             finding.Location.EndColumn
         );
 

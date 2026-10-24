@@ -44,7 +44,7 @@ public sealed class ConsoleReporter(bool useColor = true) : IReporter, IConsoleR
                 {
                     var marker = SeverityLabel(finding.Severity);
                     if (_useColor) marker = Colorize(finding.Severity, marker);
-                    output.WriteLine(SanitizeForTerminal($" {finding.Location.Line}:{finding.Location.Column} {marker} {finding.RuleId} {finding.Message}"));
+                    output.WriteLine(SanitizeForTerminal($" {finding.Location.PositionLabel} {marker} {finding.RuleId} {finding.Message}"));
                     if (finding.Snippet.Length > 0)
                     {
                         output.WriteLine(SanitizeForTerminal($" > {finding.Snippet}"));
