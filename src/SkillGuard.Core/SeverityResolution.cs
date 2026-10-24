@@ -25,7 +25,6 @@ public static class SeverityResolution
     /// <param name="patternDefinition">The pattern definition (may be null if no override is specified)</param>
     /// <param name="ruleDefaultSeverity">The rule's default severity to use when no override is specified</param>
     /// <returns>The resolved severity to use for the Finding</returns>
-    /// <exception cref="ArgumentNullException">Thrown if ruleDefaultSeverity is null</exception>
     /// <remarks>
     /// Resolution Logic:
     /// <list type="number">
@@ -36,8 +35,6 @@ public static class SeverityResolution
     /// </remarks>
     public static Severity Resolve(PatternDefinition? patternDefinition, Severity ruleDefaultSeverity)
     {
-        ArgumentNullException.ThrowIfNull(ruleDefaultSeverity);
-
         return patternDefinition?.SeverityOverride ?? ruleDefaultSeverity;
     }
 
@@ -87,7 +84,6 @@ public static class SeverityResolution
     /// </remarks>
     public static int GetWeight(Severity severity)
     {
-        ArgumentNullException.ThrowIfNull(severity);
         return severity switch
         {
             Severity.Critical => 40,

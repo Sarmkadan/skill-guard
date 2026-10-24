@@ -30,7 +30,7 @@ public class ConsoleReporterTests
         // Arrange
         var reporter = new ConsoleReporter();
         var output = new StringWriter();
-        var report = null as ScanReport;
+        ScanReport report = null!;
 
         // Act and Assert
         Assert.Throws<ArgumentNullException>(() => reporter.Write(report, output));
@@ -41,7 +41,7 @@ public class ConsoleReporterTests
     {
         // Arrange
         var reporter = new ConsoleReporter();
-        var output = null as TextWriter;
+        TextWriter output = null!;
         var report = new ScanReport(Array.Empty<Finding>(), 0, 0, TimeSpan.Zero);
 
         // Act and Assert
