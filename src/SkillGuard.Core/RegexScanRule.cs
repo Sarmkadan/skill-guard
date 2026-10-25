@@ -91,6 +91,20 @@ public abstract class RegexScanRule : IScanRule
     protected abstract IReadOnlyList<PatternDefinition> Patterns { get; }
     protected virtual bool AppliesTo(ScanTarget target) => true;
 
+    /// <summary>
+    /// Gets the maximum time a pattern may spend matching a single line before it is abandoned.
+    /// Scanned files are attacker-controlled, so this bound stops catastrophic backtracking from hanging the scan.
+    /// </summary>
+    protected virtual TimeSpan MatchTimeout => TimeSpan.FromSeconds(1);
+
+    private IReadOnlyList<BoundedPattern>? _boundedPatterns;
+
+    /// <summary>
+    /// Gets the patterns rebuilt with <see cref="MatchTimeout"/>, created once per rule instance.
+    /// </summary>
+    private IReadOnlyList<BoundedPattern> BoundedPatterns =>
+        _boundedPatterns ??= [.. Patterns.Select(p => new BoundedPattern(p, new Regex(p.Pattern.ToString(), p.Pattern.Options, MatchTimeout)))];
+
     public virtual IEnumerable<Finding> Scan(ScanTarget target)
     {
         ArgumentNullException.ThrowIfNull(target);
@@ -101,12 +115,23 @@ public abstract class RegexScanRule : IScanRule
     {
         ArgumentNullException.ThrowIfNull(target);
         if (!AppliesTo(target)) yield break;
+        var bounded = BoundedPatterns;
+        var timedOut = new bool[bounded.Count];
         for (var i = 0; i < target.Lines.Length; i++)
         {
             var line = target.Lines[i];
-            foreach (var definition in Patterns)
+            for (var p = 0; p < bounded.Count; p++)
             {
-                foreach (Match match in definition.Pattern.Matches(line))
+                if (timedOut[p]) continue;
+                var (definition, regex) = bounded[p];
+                if (!TryMatch(regex, line, out var matches))
+                {
+                    timedOut[p] = true;
+                    yield return CreateTimeoutFinding(target, i + 1, line);
+                    continue;
+                }
+
+                foreach (var match in matches)
                 {
                     var resolvedSeverity = SeverityResolution.Resolve(definition, DefaultSeverity);
                     var finding = new Finding(
@@ -116,7 +141,7 @@ public abstract class RegexScanRule : IScanRule
                         Category,
                         definition.Message,
                         SourceLocation.At(target.FilePath, i + 1, match.Index + 1, match.Length),
-                        line.Trim().Length > 200 ? line.Trim()[..200] : line.Trim()
+                        Snippet(line)
                     )
                     {
                         Remediation = Remediation
@@ -128,4 +153,56 @@ public abstract class RegexScanRule : IScanRule
             }
         }
     }
+
+    /// <summary>
+    /// Collects all matches of <paramref name="regex"/> in <paramref name="input"/> without yielding inside the try block.
+    /// </summary>
+    /// <param name="regex">The timeout-bounded regex to run.</param>
+    /// <param name="input">The line to match against.</param>
+    /// <param name="matches">The matches found, or an empty list when the timeout was reached.</param>
+    /// <returns><c>true</c> if matching finished within <see cref="MatchTimeout"/>; otherwise <c>false</c>.</returns>
+    private static bool TryMatch(Regex regex, string input, out List<Match> matches)
+    {
+        try
+        {
+            matches = regex.Matches(input).Cast<Match>().ToList();
+            return true;
+        }
+        catch (RegexMatchTimeoutException)
+        {
+            matches = [];
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Creates the diagnostic reported when a pattern exceeds <see cref="MatchTimeout"/> on a line.
+    /// A timeout on attacker-authored input is treated as a High-severity signal, so the scan fails closed.
+    /// </summary>
+    /// <param name="target">The file being scanned.</param>
+    /// <param name="lineNumber">The 1-based line on which the pattern timed out.</param>
+    /// <param name="line">The text of that line.</param>
+    /// <returns>A High-severity <see cref="Finding"/> describing the timeout.</returns>
+    private Finding CreateTimeoutFinding(ScanTarget target, int lineNumber, string line)
+    {
+        var finding = new Finding(
+            Id,
+            Name,
+            Severity.High,
+            Category,
+            $"A pattern exceeded the {MatchTimeout.TotalMilliseconds:0} ms match timeout and was skipped for the rest of this file; the input may be crafted to cause catastrophic backtracking",
+            SourceLocation.At(target.FilePath, lineNumber, 1, 1),
+            Snippet(line));
+
+        SeverityResolution.Validate(finding);
+        return finding;
+    }
+
+    private static string Snippet(string line)
+    {
+        var trimmed = line.Trim();
+        return trimmed.Length > 200 ? trimmed[..200] : trimmed;
+    }
+
+    private sealed record BoundedPattern(PatternDefinition Definition, Regex Regex);
 }
