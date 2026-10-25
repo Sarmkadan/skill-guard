@@ -1,6 +1,6 @@
 namespace SkillGuard.Core;
 
-public interface IScanRule
+public interface IScanRule : IEquatable<IScanRule>
 {
     string Id { get; }
     string Name { get; }
@@ -8,6 +8,14 @@ public interface IScanRule
     Severity DefaultSeverity { get; }
     FindingCategory Category { get; }
     IEnumerable<Finding> Scan(ScanTarget target);
+
+    bool IEquatable<IScanRule>.Equals(IScanRule? other) =>
+        other is not null &&
+        Id == other.Id &&
+        Name == other.Name &&
+        Description == other.Description &&
+        DefaultSeverity == other.DefaultSeverity &&
+        Category == other.Category;
 }
 
 public interface IScanner
